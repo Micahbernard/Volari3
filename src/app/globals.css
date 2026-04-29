@@ -1,0 +1,787 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ─────────────────────────────────────────────
+   VOLARI — "Modern Mystic" Design System
+   Dark Alternative & Esoteric Palette
+   ───────────────────────────────────────────── */
+
+@font-face {
+  font-family: "Volari Serif";
+  src: local("Playfair Display");
+  font-display: swap;
+}
+
+/* ── Theme Tokens ── */
+:root {
+  /* Base palette — swapped wholesale by [data-theme="day"] below */
+  --v-black: #050505;
+  --v-void: #0a0a0a;
+  --v-charcoal: #111111;
+  --v-ash: #1a1a1a;
+  --v-smoke: #2a2a2a;
+  --v-silver: #8a8a8a;
+  --v-bone: #c5c5c5;
+  --v-chalk: #e8e8e8;
+  --v-white: #f0f0f0;
+  --v-accent: #d4a853;
+  --v-accent-dim: #a07d3a;
+
+  /* Functional */
+  --background: var(--v-black);
+  --foreground: var(--v-chalk);
+  --muted: var(--v-silver);
+
+  /* ── Specialized tokens ── */
+
+  /* Hero "VOLARI" — 9-stop steel gradient (void) / warm brass (day) */
+  --hero-metal-0: #060708;
+  --hero-metal-1: #12161d;
+  --hero-metal-2: #283038;
+  --hero-metal-3: #4f5c6a;
+  --hero-metal-4: #8b9bab;
+  --hero-metal-5: #cfd8e2;
+  --hero-metal-6: #8e9dad;
+  --hero-metal-7: #3d4752;
+  --hero-metal-8: #0c0e12;
+
+  /* Hero bokeh — two radial blobs behind the letterform */
+  --hero-bokeh-warm: rgba(255, 255, 255, 0.26);
+  --hero-bokeh-cool: rgba(185, 200, 215, 0.10);
+  --hero-bokeh-pale: rgba(220, 232, 242, 0.16);
+  --hero-bokeh-deep: rgba(100, 118, 138, 0.05);
+
+  /* Hero specular — cursor-steered light blade traveling across the metal */
+  --hero-specular-ghost:  rgba(255, 255, 255, 0.35);
+  --hero-specular-bright: rgba(255, 255, 255, 1.00);
+  --hero-specular-blue:   rgba(248, 252, 255, 0.95);
+  --hero-specular-dim:    rgba(190, 205, 218, 0.45);
+
+  /* Hero halo — ambient glow behind the heading */
+  --hero-halo-inner: rgba(0, 0, 0, 0.55);
+  --hero-halo-outer: rgba(0, 0, 0, 0.30);
+
+  /* Comet-veil cursor — 3 silver wisps on dark; warm umber dust on cream */
+  --cursor-veil-core:   rgba(232, 232, 232, 1);
+  --cursor-veil-mid:    rgba(207, 216, 226, 1);
+  --cursor-veil-edge:   rgba(180, 192, 206, 0);
+  --cursor-veil-blend:  screen;
+  --cursor-ring-line:   rgba(232, 232, 232, 0.65);
+  --cursor-ring-shadow: rgba(207, 216, 226, 0.22);
+
+  /* Accent glow — gold at 35% / 18% alpha */
+  --accent-glow-strong: rgba(212, 168, 83, 0.35);
+  --accent-glow-soft:   rgba(212, 168, 83, 0.18);
+
+  /* Decanter — deep-gold floor of the liquid fill */
+  --decanter-bottom: #b88f3f;
+
+  /* Navbar scrolled state */
+  --nav-scrolled-bg: rgba(5, 5, 5, 0.70);
+
+  /* Chalk dot halo */
+  --chalk-dot-halo:       rgba(255, 255, 255, 0.35);
+  --chalk-dot-halo-hover: rgba(232, 232, 232, 0.55);
+
+  /* Showcase card chrome */
+  --card-hover-glow:    rgba(255, 255, 255, 0.055);
+  --card-inner-shade-a: rgba(42, 42, 42, 0.30);
+  --card-inner-shade-b: rgba(26, 26, 26, 0.40);
+  --card-inner-vignette: rgba(0, 0, 0, 0.40);
+  --card-panel-border:   rgba(255, 255, 255, 0.06);
+
+  /* Studio pillar bokeh */
+  --pillar-bokeh-gold:   rgba(212, 175, 55, 0.14);
+  --pillar-bokeh-silver: rgba(148, 163, 184, 0.12);
+  --pillar-bokeh-chalk:  rgba(255, 255, 255, 0.06);
+
+  /* Film grain */
+  --grain-opacity: 0.035;
+
+  /* Easing curves */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-in-out-circ: cubic-bezier(0.85, 0, 0.15, 1);
+
+  /* Layout */
+  --header-height: 5.5rem;
+
+  /* ── shadcn/ui compatible tokens (mapped to Volari palette) ── */
+  --radius: 0.625rem;
+  --card: var(--v-void);
+  --card-foreground: var(--v-chalk);
+  --popover: var(--v-void);
+  --popover-foreground: var(--v-chalk);
+  --primary: var(--v-accent);
+  --primary-foreground: var(--v-black);
+  --secondary: var(--v-ash);
+  --secondary-foreground: var(--v-chalk);
+  --muted-foreground: var(--v-silver);
+  --accent-foreground: var(--v-chalk);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: var(--v-smoke);
+  --input: var(--v-smoke);
+  --ring: var(--v-accent);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: var(--v-void);
+  --sidebar-foreground: var(--v-chalk);
+  --sidebar-primary: var(--v-accent);
+  --sidebar-primary-foreground: var(--v-black);
+  --sidebar-accent: var(--v-ash);
+  --sidebar-accent-foreground: var(--v-chalk);
+  --sidebar-border: var(--v-smoke);
+  --sidebar-ring: var(--v-accent);
+}
+
+/* ─────────────────────────────────────────────
+   DAYBREAK — Substance palette
+   ───────────────────────────────────────────── */
+:root[data-theme="day"] {
+  /* Base palette — every --v-* inverts its semantic role */
+  --v-black: #f2ece1;
+  --v-void: #ede6d8;
+  --v-charcoal: #e0d6c4;
+  --v-ash: #cfc3ad;
+  --v-smoke: #a89d86;
+  --v-silver: #7a6f5c;
+  --v-bone: #3e3a30;
+  --v-chalk: #1a1712;
+  --v-white: #0a0806;
+  --v-accent: #e0b45c;
+  --v-accent-dim: #b08a40;
+
+  /* Hero — warm brass stops instead of cool steel */
+  --hero-metal-0: #231408;
+  --hero-metal-1: #3d2813;
+  --hero-metal-2: #5a3f1e;
+  --hero-metal-3: #8a6334;
+  --hero-metal-4: #b89359;
+  --hero-metal-5: #ead7a8;
+  --hero-metal-6: #b2854a;
+  --hero-metal-7: #6f4f26;
+  --hero-metal-8: #2a180a;
+
+  /* Hero bokeh — warm cream instead of cool silver */
+  --hero-bokeh-warm: rgba(255, 248, 224, 0.28);
+  --hero-bokeh-cool: rgba(228, 208, 176, 0.10);
+  --hero-bokeh-pale: rgba(255, 240, 216, 0.18);
+  --hero-bokeh-deep: rgba(130, 100, 60, 0.06);
+
+  /* Hero specular — warmed highlights */
+  --hero-specular-ghost:  rgba(255, 250, 235, 0.35);
+  --hero-specular-bright: rgba(255, 248, 228, 1.00);
+  --hero-specular-blue:   rgba(252, 246, 232, 0.95);
+  --hero-specular-dim:    rgba(220, 200, 160, 0.45);
+
+  /* Hero halo — subtle warm glow */
+  --hero-halo-inner: rgba(180, 140, 80, 0.25);
+  --hero-halo-outer: rgba(180, 140, 80, 0.15);
+
+  /* Comet veil — amber dust motes; multiply blend */
+  --cursor-veil-core:   rgba(80, 55, 25, 1);
+  --cursor-veil-mid:    rgba(110, 80, 40, 1);
+  --cursor-veil-edge:   rgba(140, 105, 60, 0);
+  --cursor-veil-blend:  multiply;
+  --cursor-ring-line:   rgba(80, 55, 25, 0.55);
+  --cursor-ring-shadow: rgba(180, 140, 80, 0.22);
+
+  /* Accent glow tuned to brightened day gold */
+  --accent-glow-strong: rgba(224, 180, 92, 0.40);
+  --accent-glow-soft:   rgba(224, 180, 92, 0.22);
+
+  /* Decanter — deeper gold floor reads on cream */
+  --decanter-bottom: #9c7020;
+
+  /* Navbar scrolled — translucent cream */
+  --nav-scrolled-bg: rgba(242, 236, 225, 0.72);
+
+  /* Chalk dot halo */
+  --chalk-dot-halo:       rgba(180, 140, 80, 0.35);
+  --chalk-dot-halo-hover: rgba(180, 140, 80, 0.55);
+
+  /* Showcase card chrome — warmed counterparts */
+  --card-hover-glow:    rgba(26, 23, 18, 0.08);
+  --card-inner-shade-a: rgba(168, 157, 134, 0.28);
+  --card-inner-shade-b: rgba(138, 124, 98, 0.35);
+  --card-inner-vignette: rgba(60, 40, 15, 0.28);
+  --card-panel-border:   rgba(26, 23, 18, 0.10);
+
+  /* Studio pillar bokeh */
+  --pillar-bokeh-gold:   rgba(224, 180, 92, 0.20);
+  --pillar-bokeh-silver: rgba(168, 152, 120, 0.16);
+  --pillar-bokeh-chalk:  rgba(26, 23, 18, 0.08);
+
+  /* Grain — heavier on cream */
+  --grain-opacity: 0.055;
+
+  /* shadcn/ui tokens for day mode */
+  --background: var(--v-black);
+  --foreground: var(--v-chalk);
+  --muted: var(--v-silver);
+  --card: var(--v-void);
+  --card-foreground: var(--v-chalk);
+  --popover: var(--v-void);
+  --popover-foreground: var(--v-chalk);
+  --primary: var(--v-accent);
+  --primary-foreground: var(--v-black);
+  --secondary: var(--v-ash);
+  --secondary-foreground: var(--v-chalk);
+  --muted-foreground: var(--v-silver);
+  --accent-foreground: var(--v-chalk);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: rgba(0, 0, 0, 12%);
+  --input: rgba(0, 0, 0, 15%);
+  --ring: var(--v-accent);
+}
+
+/* ── Tailwind v4 Theme Extension ── */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-v-black: var(--v-black);
+  --color-v-void: var(--v-void);
+  --color-v-charcoal: var(--v-charcoal);
+  --color-v-ash: var(--v-ash);
+  --color-v-smoke: var(--v-smoke);
+  --color-v-silver: var(--v-silver);
+  --color-v-bone: var(--v-bone);
+  --color-v-chalk: var(--v-chalk);
+  --color-v-white: var(--v-white);
+  --color-v-accent: var(--v-accent);
+  --color-v-accent-dim: var(--v-accent-dim);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-playfair);
+
+  /* shadcn/ui color tokens */
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* ── Base Reset ── */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+::selection {
+  background: var(--v-accent);
+  color: var(--v-black);
+}
+
+html {
+  background: var(--v-black);
+  color: var(--v-chalk);
+  scroll-behavior: auto; /* Lenis handles smooth scroll */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+body {
+  background: transparent; /* NOT var(--v-black) — lets WebGL show through */
+  color: var(--v-chalk);
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* ── Film Grain / Noise Overlay ── */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: var(--grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+  will-change: transform;
+  mix-blend-mode: overlay;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--v-black);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--v-smoke);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--v-silver);
+}
+
+/* ── Utility Classes ── */
+.text-balance {
+  text-wrap: balance;
+}
+
+.clip-inset-full {
+  clip-path: inset(0 100% 0 0);
+}
+
+.clip-inset-none {
+  clip-path: inset(0 0% 0 0);
+}
+
+/* Mask reveal utility for GSAP animations */
+.mask-reveal {
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+}
+
+.mask-hidden {
+  clip-path: polygon(0 0, 0 0, 0 100%, 0 100%);
+}
+
+/* Horizontal rule styling */
+.v-rule {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--v-smoke) 20%,
+    var(--v-smoke) 80%,
+    transparent
+  );
+}
+
+/* Navbar horizontal inset */
+.nav-viewport-inset {
+  padding-left: max(1.75rem, 7vw);
+  padding-right: max(1.5rem, 5vw);
+}
+
+@media (min-width: 1280px) {
+  .nav-viewport-inset {
+    padding-left: max(2.5rem, 8vw);
+    padding-right: max(2rem, 6vw);
+  }
+}
+
+/* ── Navbar scroll state ── */
+.nav-scrolled {
+  background-color: var(--nav-scrolled-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ── Theme flip: fallback crossfade ── */
+body.theme-flipping,
+body.theme-flipping *,
+body.theme-flipping *::before,
+body.theme-flipping *::after {
+  transition:
+    background-color 1.5s var(--ease-out-expo),
+    color 1.5s var(--ease-out-expo),
+    border-color 1.5s var(--ease-out-expo),
+    fill 1.5s var(--ease-out-expo),
+    stroke 1.5s var(--ease-out-expo),
+    box-shadow 1.5s var(--ease-out-expo),
+    opacity 1.5s var(--ease-out-expo),
+    filter 1.5s var(--ease-out-expo);
+}
+
+/* ═════════════════════════════════════════════════════════════════════
+   Theme flip — direction-dependent transitions
+   ═════════════════════════════════════════════════════════════════════ */
+
+/* ── Shared envelope for the RISE path only ── */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-fill-mode: both;
+  mix-blend-mode: normal;
+}
+
+/* ── RISE — void → day — sunlight from crest ── */
+:root[data-flip-direction="rise"]::view-transition-old(root) {
+  animation:
+    crest-hold 1.5s var(--ease-out-expo) both,
+    dawn-warm-old 1.5s var(--ease-out-expo) both;
+}
+:root[data-flip-direction="rise"]::view-transition-new(root) {
+  animation: crest-sunrise 1.5s var(--ease-out-expo) both;
+}
+
+@keyframes crest-hold {
+  from,
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes crest-sunrise {
+  0% {
+    clip-path: circle(0px at var(--flip-ox) var(--flip-oy));
+    filter: brightness(1.45) saturate(1.14) contrast(1.02);
+  }
+  38% {
+    filter: brightness(1.14) saturate(1.06);
+  }
+  100% {
+    clip-path: circle(150vmax at var(--flip-ox) var(--flip-oy));
+    filter: brightness(1) saturate(1) contrast(1);
+  }
+}
+
+@keyframes dawn-warm-old {
+  0%,
+  100% {
+    filter: brightness(1) sepia(0) saturate(1);
+  }
+  38% {
+    filter: brightness(1.08) sepia(0.18) saturate(1.08);
+  }
+}
+
+:root[data-flip-direction="rise"] body.theme-flipping {
+  filter: brightness(1.03) sepia(0.07);
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.001s !important;
+  }
+
+  :root[data-flip-direction="rise"] body.theme-flipping {
+    filter: none !important;
+  }
+}
+
+/* ── Hide native cursor on desktop when custom cursor is active ── */
+@media (pointer: fine) {
+  * {
+    cursor: none !important;
+  }
+}
+
+/* ── Responsive Type Scale ── */
+@media (max-width: 768px) {
+  :root {
+    --header-height: 4.25rem;
+  }
+}
+
+/* ── Hero "VOLARI" — glitter + bokeh + specular ── */
+.hero-volari-heading {
+  filter: drop-shadow(0 0 22px var(--hero-halo-inner))
+    drop-shadow(0 0 52px var(--hero-halo-outer));
+}
+
+.hero-volari-letter {
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.92' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.42'/%3E%3C/svg%3E"),
+    radial-gradient(
+      ellipse 100% 70% at 50% 48%,
+      var(--hero-bokeh-warm) 0%,
+      var(--hero-bokeh-cool) 30%,
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 85% 60% at 50% 52%,
+      var(--hero-bokeh-pale) 0%,
+      var(--hero-bokeh-deep) 40%,
+      transparent 62%
+    ),
+    linear-gradient(
+      102deg,
+      transparent 0%,
+      transparent 36%,
+      var(--hero-specular-ghost) 43%,
+      var(--hero-specular-bright) 49%,
+      var(--hero-specular-blue) 51%,
+      var(--hero-specular-dim) 58%,
+      transparent 64%,
+      transparent 100%
+    ),
+    linear-gradient(
+      93deg,
+      var(--hero-metal-0) 0%,
+      var(--hero-metal-1) 9%,
+      var(--hero-metal-2) 22%,
+      var(--hero-metal-3) 36%,
+      var(--hero-metal-4) 44%,
+      var(--hero-metal-5) 51%,
+      var(--hero-metal-6) 58%,
+      var(--hero-metal-7) 74%,
+      var(--hero-metal-8) 100%
+    );
+  background-size:
+    72px 72px,
+    240% 240%,
+    220% 220%,
+    340% 100%,
+    280% 100%;
+  background-position:
+    0 0,
+    35% 42%,
+    68% 58%,
+    125% 50%,
+    15% 50%;
+  background-repeat: repeat, no-repeat, no-repeat, no-repeat, no-repeat;
+  background-blend-mode: overlay, lighten, lighten, normal, normal;
+  background-clip: text;
+  -webkit-background-clip: text;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-volari-letter {
+    animation: none;
+    background-position:
+      36px 24px,
+      48% 45%,
+      52% 55%,
+      55% 50%,
+      42% 50%;
+  }
+
+  .hero-volari-heading {
+    filter: none;
+  }
+}
+
+@keyframes hero-volari-glitter-metal {
+  0% {
+    background-position:
+      0 0,
+      28% 38%,
+      72% 62%,
+      140% 50%,
+      0% 50%;
+  }
+  100% {
+    background-position:
+      72px 56px,
+      62% 52%,
+      38% 48%,
+      -45% 50%,
+      100% 50%;
+  }
+}
+
+/* Cursor ring state */
+.cursor-ring {
+  background-color: transparent !important;
+  border: 3px solid white;
+}
+
+/* ── Comet veil blend mode ── */
+.cursor-veil {
+  mix-blend-mode: var(--cursor-veil-blend);
+}
+
+/* ── Idle silver heartbeat ── */
+@keyframes silver-heartbeat {
+  0% {
+    transform: scale(0.55);
+    opacity: 0.45;
+  }
+  40% {
+    opacity: 0.25;
+  }
+  100% {
+    transform: scale(1.45);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lens-button span[style*="silver-heartbeat"] {
+    display: none !important;
+  }
+}
+
+/* ── Mercury ripple rings ── */
+@keyframes mercury-ripple {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.45;
+  }
+  60% {
+    opacity: 0.12;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+.mercury-ripples circle {
+  animation: mercury-ripple 3s ease-out infinite;
+  transform-origin: 24px 24px;
+}
+.mercury-ripples circle:nth-child(1) { animation-delay: 0s; animation-duration: 2.4s; }
+.mercury-ripples circle:nth-child(2) { animation-delay: 0.4s; animation-duration: 2.8s; }
+.mercury-ripples circle:nth-child(3) { animation-delay: 0.8s; animation-duration: 3.2s; }
+.mercury-ripples circle:nth-child(4) { animation-delay: 1.2s; animation-duration: 3.6s; }
+.mercury-ripples circle:nth-child(5) { animation-delay: 1.6s; animation-duration: 4.0s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mercury-ripples circle {
+    animation: none !important;
+  }
+}
+
+/* ── Idle mercury breathing pulse ── */
+@keyframes mercury-breathe {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.18);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lens-button::before {
+    display: none;
+  }
+}
+
+/* ── Navbar gravitational-lens menu button ── */
+@keyframes lens-border-pulse {
+  0%, 100% { border-color: rgba(55, 55, 62, 0.2); }
+  40%      { border-color: rgba(185, 185, 192, 0.5); }
+  60%      { border-color: rgba(55, 55, 62, 0.2); }
+  82%      { border-color: rgba(185, 185, 192, 0.5); }
+}
+
+@keyframes lens-shadow-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 8px  2px rgba(55, 55, 62, 0.15),
+      0 0 22px 6px rgba(55, 55, 62, 0.10);
+  }
+  20% {
+    box-shadow:
+      0 0 8px  2px rgba(185, 185, 192, 0.35),
+      0 0 22px 6px rgba(55, 55, 62, 0.10);
+  }
+  40% {
+    box-shadow:
+      0 0 8px  2px rgba(110, 110, 118, 0.22),
+      0 0 22px 6px rgba(150, 150, 158, 0.20);
+  }
+  70% {
+    box-shadow:
+      0 0 8px  2px rgba(55, 55, 62, 0.15),
+      0 0 22px 6px rgba(185, 185, 192, 0.28);
+  }
+  82% {
+    box-shadow:
+      0 0 8px  2px rgba(185, 185, 192, 0.35),
+      0 0 22px 6px rgba(55, 55, 62, 0.10);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lens-button {
+    animation: none !important;
+    border-color: rgba(120, 120, 128, 0.35) !important;
+    box-shadow:
+      0 0 8px  2px rgba(120, 120, 128, 0.20),
+      0 0 22px 6px rgba(120, 120, 128, 0.14) !important;
+  }
+}
+
+.lens-button:focus-visible {
+  outline: 2px solid rgba(220, 220, 228, 0.45);
+  outline-offset: 2px;
+}
+
+@keyframes lens-ghost-flicker {
+  0%, 35%, 48%, 100% { opacity: 0; }
+  38%                { opacity: 0.14; }
+  41%                { opacity: 0.22; }
+  44%                { opacity: 0.14; }
+}
+
+.lens-ghost {
+  animation: lens-ghost-flicker 9s ease-in-out infinite;
+  transform-origin: 24px 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lens-ghost {
+    animation: none;
+    opacity: 0.18;
+  }
+}
+
+/* ── shadcn/ui base layer ── */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
