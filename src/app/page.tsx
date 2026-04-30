@@ -3,12 +3,7 @@
 import { useEffect, useRef, useMemo } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import ServicesShowcase from "@/components/ServicesShowcase";
-import WorkShowcase from "@/components/WorkShowcase";
-import ProcessPipeline from "@/components/ProcessPipeline";
-import StudioPillars from "@/components/StudioPillars";
-import TerminalContact from "@/components/TerminalContact";
-import SiteFooter from "@/components/SiteFooter";
+
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -421,35 +416,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════════════════════
-          SERVICES — Five Seals horizontal scroll
-          ═══════════════════════════════════════════════════════ */}
-      <ServicesShowcase />
 
-      {/* ═══════════════════════════════════════════════════════
-          WORK — Portfolio showcase
-          ═══════════════════════════════════════════════════════ */}
-      <WorkShowcase />
-
-      {/* ═══════════════════════════════════════════════════════
-          PROCESS — Discovery → Launch pipeline
-          ═══════════════════════════════════════════════════════ */}
-      <ProcessPipeline />
-
-      {/* ═══════════════════════════════════════════════════════
-          PILLARS — Direction, Craft, Delivery
-          ═══════════════════════════════════════════════════════ */}
-      <StudioPillars />
-
-      {/* ═══════════════════════════════════════════════════════
-          CONTACT — Terminal-style contact section
-          ═══════════════════════════════════════════════════════ */}
-      <TerminalContact />
-
-      {/* ═══════════════════════════════════════════════════════
-          FOOTER
-          ═══════════════════════════════════════════════════════ */}
-      <SiteFooter />
     </>
   );
 }
