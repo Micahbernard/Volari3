@@ -3,6 +3,7 @@
 import { useEffect, useRef, useMemo } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import TheDescent from "@/components/TheDescent";
 
 
 gsap.registerPlugin(ScrollTrigger);
@@ -416,7 +417,10 @@ export default function Home() {
         </div>
       </section>
 
-
+      {/* ═══════════════════════════════════════════════════════
+          THE DESCENT — Parallax void descent into the Abyss
+          ═══════════════════════════════════════════════════════ */}
+      <TheDescent />
     </>
   );
 }
