@@ -175,6 +175,7 @@ export const fragmentShader = /* glsl */ `
     return 42.0*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));
   }
 
+  // ── fBm: 6-octave with golden-ratio domain rotation ──
   float fbm(vec3 p){
     float val=0.0;
     float amp=0.5;
@@ -190,62 +191,152 @@ export const fragmentShader = /* glsl */ `
     return val;
   }
 
-  // ── Hash for procedural particles ──
-  float hash21(vec2 p){
-    p=fract(p*vec2(123.34,456.21));
-    p+=dot(p,p+45.32);
-    return fract(p.x*p.y);
-  }
+  // ═══════════════════════════════════════════════════════════
+  // VOID DESCENT — All visual effects computed as continuous
+  // noise fields. No grid partitioning. No cells. No clipping.
+  //
+  // Design laws:
+  //   - Absolute #000000 black. No tints. No warmth. No violet.
+  //   - Viscous liquid, not soft mist. Tight smoothstep = harsh,
+  //     inky edges as darkness consumes the screen.
+  //   - Light beam: physical shaft of light eaten by the void.
+  //     Noise-distorted edges, not a soft gaussian blur.
+  // ═══════════════════════════════════════════════════════════
 
-  // ── Volumetric fog layer ──
-  // Returns fog density at a given UV, time, and scale.
-  // Uses fbm for organic cloud shapes that drift slowly.
-  float fogLayer(vec2 uv, float t, float scale, float speed){
-    vec2 p = uv * scale;
-    p.y -= t * speed; // slow upward drift
-    float n = fbm(vec3(p, t * 0.02));
-    return smoothstep(0.1, 0.7, n * 0.5 + 0.5);
-  }
+  // ── Viscous void tendrils ──
+  // High-frequency fBm with brutal smoothstep clamping.
+  // This creates floating, organic specks and tendrils of absolute
+  // black that appear to drift through the scene — like void ash
+  // particulate suspended in a heavy liquid. No grid, no cells,
+  // just continuous noise → impossible to clip.
+  //
+  // The smoothstep threshold is deliberately tight: the noise only
+  // "breaks through" where it exceeds a high threshold, giving
+  // sharp, inky edges rather than soft cloud shapes.
+  float voidTendrils(vec2 uv, float t, float descent){
+    float result = 0.0;
 
-  // ── Void ash particle field ──
-  // Procedural particles: hash-based positions that drift upward.
-  // Returns combined glow from nearby particles.
-  float ashParticles(vec2 uv, float t, float descent){
-    float glow = 0.0;
-    // Tile space into cells, check 3x3 neighborhood for smooth wrapping
-    vec2 cellSize = vec2(0.08, 0.06); // ~12x16 cells across screen
-    vec2 cell = floor(uv / cellSize);
-
-    for(int dx = -1; dx <= 1; dx++){
-      for(int dy = -1; dy <= 1; dy++){
-        vec2 c = cell + vec2(float(dx), float(dy));
-        float h = hash21(c);
-        // ~55% of cells have a particle
-        if(h > 0.55) continue;
-
-        vec2 center = (c + 0.4 + 0.2 * vec2(hash21(c + 1.7), hash21(c + 3.1))) * cellSize;
-        // Upward drift with gentle sway
-        float speed = 0.01 + h * 0.02;
-        center.y = mod(center.y + t * speed, 1.0);
-        center.x += sin(t * 0.5 + h * 6.28) * 0.003;
-
-        float dist = length(uv - center);
-        // Particle is a soft dot with slight size variation
-        float radius = 0.001 + h * 0.002;
-        float particle = exp(-dist * dist / (radius * radius * 400.0));
-        // Opacity: faint at surface, stronger in the abyss
-        float opacity = mix(0.0, 0.15 + h * 0.25, descent);
-        glow += particle * opacity;
-      }
+    // Layer 1: Large slow drift — the heavy, viscous mass
+    {
+      vec3 p = vec3(uv * 3.2, t * 0.012);
+      p.y -= t * 0.006; // slow downward creep (sinking)
+      float n = fbm(p);
+      // Brutal threshold: only the peaks of the noise field break through.
+      // This creates harsh, inky outlines — not soft fog.
+      float tendril = smoothstep(0.25, 0.55, n);
+      result += tendril * 0.45 * descent;
     }
-    return glow;
+
+    // Layer 2: Medium detail — drifting ash specks and thinner tendrils
+    {
+      vec3 p = vec3(uv * 7.0 + vec2(1.7, 3.2), t * 0.025);
+      p.y -= t * 0.010;
+      float n = fbm(p);
+      float speck = smoothstep(0.35, 0.62, n);
+      result += speck * 0.30 * descent;
+    }
+
+    // Layer 3: Fine particulate — small bright void ash motes
+    // These use a HIGHER frequency and an even tighter threshold,
+    // creating isolated dots and thin filaments that feel like
+    // physical ash particles — but are purely continuous noise.
+    {
+      vec3 p = vec3(uv * 14.0 + vec2(5.1, 8.3), t * 0.04);
+      p.y -= t * 0.018; // slightly faster upward drift (buoyant ash)
+      float n = fbm(p);
+      // Very tight threshold → sparse, isolated specks
+      float mote = smoothstep(0.52, 0.72, n);
+      result += mote * 0.20 * descent;
+    }
+
+    return result;
+  }
+
+  // ── Void ash glow ──
+  // Inverted tendril field: where the void tendrils AREN'T,
+  // faint pale specks of residual light survive. This creates
+  // the impression of pale ash particles floating in the darkness.
+  // Again: no grid, no cells. Continuous noise only.
+  float ashGlow(vec2 uv, float t, float descent){
+    float result = 0.0;
+
+    // Pale ash — bright specks in the gaps between tendrils
+    {
+      vec3 p = vec3(uv * 18.0 + vec2(9.7, 2.4), t * 0.035);
+      p.y -= t * 0.015;
+      float n = fbm(p);
+      // Inverted: bright where noise is in a narrow band
+      float ash = smoothstep(0.48, 0.56, n) - smoothstep(0.56, 0.68, n);
+      result += ash * 0.12 * descent;
+    }
+
+    // Even finer ash — barely visible, ambient
+    {
+      vec3 p = vec3(uv * 32.0 + vec2(4.1, 7.8), t * 0.05);
+      p.y -= t * 0.022;
+      float n = fbm(p);
+      float fine = smoothstep(0.55, 0.62, n) - smoothstep(0.62, 0.72, n);
+      result += fine * 0.06 * descent;
+    }
+
+    return result;
+  }
+
+  // ── Light beam from above ──
+  // A physical shaft of piercing light struggling against the heavy
+  // void liquid. Edges are noise-distorted — the black void actively
+  // "eats" into the beam as descent deepens.
+  float lightBeam(vec2 uv, float t, float descent){
+    float beamCenter = 0.5;
+
+    // Horizontal distance from center — but distorted by noise
+    // so the void eats into the edges organically
+    float noiseEdge = 0.0;
+    {
+      // Noise that distorts the beam edges over time
+      // Slow drift makes the void feel alive, consuming
+      vec3 np = vec3(uv * 4.0, t * 0.02);
+      float edgeNoise = fbm(np);
+      // Scale the distortion: more distortion as descent deepens
+      // (the void gets more aggressive)
+      noiseEdge = edgeNoise * mix(0.02, 0.10, descent);
+    }
+
+    float beamDist = abs(uv.x - beamCenter) + noiseEdge;
+
+    // Beam width narrows with descent — the void crushes it
+    float baseWidth = mix(0.12, 0.015, descent);
+
+    // Harsh falloff: not a soft gaussian, but a sharp edge
+    // that the void is eating into. The tight smoothstep
+    // gives it a physical, almost solid quality.
+    float beam = 1.0 - smoothstep(baseWidth * 0.3, baseWidth, beamDist);
+
+    // Additional noise distortion on the beam body — makes it
+    // feel like the light is struggling, flickering against the void
+    vec3 bodyNoiseP = vec3(uv * 8.0, t * 0.06);
+    float bodyNoise = fbm(bodyNoiseP);
+    // Void eats into the beam body at depth
+    float bodyEat = smoothstep(0.15, 0.55, bodyNoise) * descent * 0.6;
+    beam *= (1.0 - bodyEat);
+
+    // Vertical falloff — strongest at top, fading toward bottom
+    // The light is FROM above, so it weakens as it penetrates down
+    float vertFalloff = 1.0 - smoothstep(0.05, 0.85, uv.y);
+    beam *= vertFalloff;
+
+    // Overall opacity: beam fades as descent deepens
+    // Quadratic fade — it resists at first, then dies quickly
+    float beamOpacity = mix(0.14, 0.0, descent * descent);
+
+    return beam * beamOpacity;
   }
 
   void main(){
     float aspect=uResolution.x/uResolution.y;
     float tw=uTransitionWarp;
     float td=uTransitionDir;
-    float d = uDescent; // shorthand — 0 = surface, 1 = abyss
+    float d = uDescent; // shorthand — 0 = surface, 1 = abyss floor
     vec2 uvw=vUv;
     vec2 wobble=vec2(
       snoise(vec3(vUv*6.0,uTime*0.2)),
@@ -360,115 +451,67 @@ export const fragmentShader = /* glsl */ `
 
     // ═══════════════════════════════════════════════════════════
     // THE ABYSS — Descent effects
+    //
     // All driven by uDescent: 0 = surface, 1 = abyss floor.
-    // These layer on top of the existing fluid palette.
+    // Every effect is a continuous noise field. No grids. No cells.
+    // Absolute #000000 black. No tints. No warmth. No violet.
+    // The Void is unforgiving.
     // ═══════════════════════════════════════════════════════════
 
     // ── Light beam from above ──
-    // A pale column centered on screen. Narrows and fades as descent deepens.
-    // At surface: full beam. At abyss floor: nothing — consumed.
+    // A physical shaft of light eaten by the void.
+    // Noise-distorted edges. Not soft — harsh and struggling.
     {
-      float beamWidth = mix(0.14, 0.02, d); // viewport fraction
-      float beamCenter = 0.5; // centered
-      float beamDist = abs(vUv.x - beamCenter);
-      // Gaussian falloff for soft edges
-      float beam = exp(-pow(beamDist / beamWidth, 2.0));
-      // Vertical falloff — strongest at top, fades toward bottom
-      float vertFalloff = smoothstep(1.0, 0.2, vUv.y);
-      beam *= vertFalloff;
-      // Opacity fades with descent
-      float beamOpacity = mix(0.10, 0.0, d) * (1.0 - d * 0.95);
-      // Beam color: cold silver-white
-      vec3 beamColor = mix(vec3(0.55, 0.60, 0.70), vec3(0.35, 0.38, 0.45), uFlip);
-      col += beamColor * beam * beamOpacity;
+      float beam = lightBeam(vUv, uTime, d);
+      // Beam color: cold silver-white. No warmth. No tint.
+      vec3 beamColor = vec3(0.55, 0.58, 0.64);
+      col += beamColor * beam;
     }
 
-    // ── Volumetric fog ──
-    // Three layers at different scales and speeds, thickening with descent.
-    // Layer 1: distant, large slow clouds
+    // ── Viscous void tendrils ──
+    // Inky, harsh-edged darkness consuming the scene.
+    // NOT soft fog. Tight smoothstep = sharp, viscous edges.
     {
-      float fog1 = fogLayer(vUv, uTime, 2.5, 0.008);
-      float fog1Opacity = mix(0.0, 0.25, d) * fog1;
-      vec3 fogColor1 = mix(vec3(0.04, 0.045, 0.055), vec3(0.12, 0.11, 0.10), uFlip);
-      col = mix(col, fogColor1, fog1Opacity);
-    }
-    // Layer 2: mid-range, medium detail
-    {
-      float fog2 = fogLayer(vUv + vec2(0.3, 0.7), uTime * 0.8, 4.0, 0.012);
-      float fog2Opacity = mix(0.0, 0.35, d * d) * fog2;
-      vec3 fogColor2 = mix(vec3(0.03, 0.035, 0.045), vec3(0.10, 0.095, 0.09), uFlip);
-      col = mix(col, fogColor2, fog2Opacity);
-    }
-    // Layer 3: close, thick fog that dominates at depth
-    {
-      float fog3 = fogLayer(vUv + vec2(0.7, 0.2), uTime * 1.2, 6.0, 0.018);
-      float fog3Opacity = mix(0.0, 0.55, d * d * d) * fog3;
-      vec3 fogColor3 = mix(vec3(0.02, 0.025, 0.032), vec3(0.08, 0.075, 0.07), uFlip);
-      col = mix(col, fogColor3, fog3Opacity);
+      float voidDensity = voidTendrils(vUv, uTime, d);
+      // Mix toward absolute black (#000000) based on void density
+      col = mix(col, vec3(0.0), voidDensity);
     }
 
-    // ── Void ash particles ──
-    // Procedural points of pale light drifting upward through the void.
+    // ── Void ash glow ──
+    // Pale specks of residual light in the gaps.
+    // These are the floating ash particles — but generated
+    // from continuous noise, never from a grid.
     {
-      float ashGlow = ashParticles(vUv, uTime, d);
-      // Ash color: pale silver-blue (void) or warm dust (day)
-      vec3 ashColor = mix(vec3(0.55, 0.60, 0.70), vec3(0.70, 0.62, 0.50), uFlip);
-      col += ashColor * ashGlow;
+      float ash = ashGlow(vUv, uTime, d);
+      // Ash color: cold pale silver. No warmth.
+      vec3 ashColor = vec3(0.45, 0.48, 0.54);
+      col += ashColor * ash;
     }
 
     // ── Vignette intensification ──
-    // Surface: existing gentle vignette. Abyss: edges consume inward.
+    // Surface: gentle vignette. Abyss: edges consume inward.
+    // The void presses in from the edges.
     {
       float vig = 1.0 - smoothstep(0.06, 0.98, length(p * 0.78));
-      float vigVoid = pow(vig, mix(1.24, 0.35, d)); // power drops → stronger vignette
-      float vigMultiplier = mix(vigVoid, 1.0, uFlip);
-      // In the abyss, vignette is so strong it becomes the dominant darkener
-      col *= mix(vigMultiplier, 1.0, 0.0); // always apply (void theme)
-      // In day mode, still retreat vignette
-      col *= mix(1.0, 1.0, uFlip * (1.0 - d)); // day + abyss = still vignette
-      // Simplified: blend between void-vignette and flat based on flip AND descent
-      float finalVig = mix(vigVoid, 1.0, uFlip * (1.0 - d));
-      // Re-apply: we already applied the original vignette above, so let's
-      // just apply an additional descent vignette on top
-      float descentVig = pow(vig, mix(1.0, 0.15, d));
-      col *= mix(1.0, descentVig, d * 0.6); // blend in the intensified vignette
+      float descentVig = pow(vig, mix(1.0, 0.12, d));
+      // Blend in the intensified vignette — full strength at abyss floor
+      col *= mix(1.0, descentVig, d * 0.7);
     }
 
     // ── Overall darkening ──
-    // Surface: full brightness. Abyss floor: near-total darkness.
-    // The color fades to near-black, consuming everything.
+    // Surface: full brightness. Abyss floor: absolute #000000.
+    // Quadratic curve: slow start, then the void swallows everything.
     {
-      float darkness = mix(1.0, 0.015, d * d); // quadratic for slow start, fast finish
+      float darkness = mix(1.0, 0.0, d * d);
       col *= darkness;
     }
 
-    // ── Abyss tint ──
-    // At depth, a subtle cool violet undertone creeps in —
-    // the signature of the Void in Hollow Knight.
+    // ── Desaturation toward the void ──
+    // The deeper you go, the less color survives.
+    // At the abyss floor: pure luminance (which is already ~0).
     {
-      float tintStrength = d * d * 0.12;
-      vec3 abyssTint = vec3(0.08, 0.04, 0.14); // deep violet-black
-      col = mix(col, col + abyssTint * col, tintStrength);
-    }
-
-    // ── Original vignette (void/day) ──
-    // Re-apply the base vignette logic that was above, but now
-    // it competes with the descent vignette. We handle this by
-    // using the original code but letting descent override at depth.
-    // (Already integrated into the descent vignette block above.)
-
-    // ── Final brightness ──
-    // Surface: original formula. Abyss: near-zero.
-    // We blend the original brightness multiplier with the descent darkness.
-    {
-      float baseBright = mix(0.74, 0.88, uFlip) + mix(0.19, 0.11, uFlip) * (f*0.6+0.4*length(q));
-      // At surface, use baseBright. At abyss floor, baseBright is irrelevant (already dark).
-      // But we need it for the transition zone.
-      // Only apply the base brightness where descent hasn't already consumed it.
-      // The darkness multiplication above already handles the heavy lifting.
-      // This just ensures the mid-descent zone still has the right feel.
       float lum = dot(col, vec3(0.2126, 0.7152, 0.0722));
-      col = mix(vec3(lum), col, mix(0.90, 0.70, d)); // desaturate slightly in the abyss
+      col = mix(col, vec3(lum), d * 0.8);
     }
 
     col = max(col, vec3(0.0));

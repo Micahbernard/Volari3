@@ -10,12 +10,14 @@ gsap.registerPlugin(ScrollTrigger);
 // ─────────────────────────────────────────────────────────────
 // THE DESCENT — Scroll driver + ghost text + architecture silhouettes
 //
-// The actual visual descent (fog, particles, light beam, darkening)
-// is handled entirely by the fluidBackground shader via uDescent.
+// The actual visual descent (viscous void tendrils, ash glow,
+// light beam, darkening, vignette) is handled entirely by the
+// fluidBackground shader via uDescent.
 // This component only:
 //   1. Drives scroll progress → setDescentProgress (→ shader uniform)
 //   2. Renders gothic arch silhouettes (SVG, parallaxing)
-//   3. Renders ghost text that breathes in and out
+//   3. Renders ghost text that crystallizes from the void
+//      using clip-path polygon reveal + blur dissolve + y translation
 // ─────────────────────────────────────────────────────────────
 
 const GHOST_LINES = [
@@ -45,7 +47,10 @@ export default function TheDescent() {
           trigger: section,
           start: "top top",
           end: "bottom bottom",
-          scrub: 0.6,
+          // Heavy, cinematic pacing: scrub value makes the descent
+          // feel weighted and slow — like sinking through liquid.
+          // Higher = more lag, more weight, more atmosphere.
+          scrub: 1.2,
           onUpdate: (self) => {
             // Feed progress to the shader
             setDescentProgress(self.progress);
@@ -87,7 +92,12 @@ export default function TheDescent() {
         );
       }
 
-      // ── Ghost text: breathes in and out ──
+      // ── Ghost text: crystallizes from the void ──
+      // Instead of a simple opacity fade, each line:
+      //   1. Reveals via clip-path polygon (vertical wipe, bottom to top)
+      //   2. Dissolves from heavy blur to sharp focus
+      //   3. Drifts upward slightly as it materializes
+      //   4. Then fades and sinks back into the void
       for (const line of GHOST_LINES) {
         const el = textRefs.current.find(
           (_, i) => GHOST_LINES[i]?.text === line.text
@@ -95,11 +105,45 @@ export default function TheDescent() {
         if (!el) continue;
 
         const enterAt = line.at;
-        const peakAt = enterAt + 0.08;
-        const exitAt = peakAt + 0.12;
+        const peakAt = enterAt + 0.10;
+        const exitAt = peakAt + 0.14;
 
-        tl.fromTo(el, { opacity: 0, y: 20 }, { opacity: 0.65, y: 0, duration: peakAt - enterAt, ease: "power2.out" }, enterAt);
-        tl.to(el, { opacity: 0, y: -15, duration: exitAt - peakAt, ease: "power2.in" }, peakAt);
+        // ── Crystallization: clip-path + blur + y-rise ──
+        // clip-path polygon: starts as a thin horizontal slit at center,
+        // expands to reveal the full text area. This creates the
+        // impression of text emerging from a crack in the void.
+        tl.fromTo(
+          el,
+          {
+            clipPath: "polygon(0% 50%, 100% 50%, 100% 50%, 0% 50%)",
+            filter: "blur(10px)",
+            y: 18,
+            opacity: 0,
+          },
+          {
+            clipPath: "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)",
+            filter: "blur(0px)",
+            y: 0,
+            opacity: 0.65,
+            duration: peakAt - enterAt,
+            ease: "power2.out",
+          },
+          enterAt
+        );
+
+        // ── Dissolution: fade, blur, sink back ──
+        tl.to(
+          el,
+          {
+            clipPath: "polygon(0% 50%, 100% 50%, 100% 50%, 0% 50%)",
+            filter: "blur(8px)",
+            y: -12,
+            opacity: 0,
+            duration: exitAt - peakAt,
+            ease: "power2.in",
+          },
+          peakAt
+        );
       }
     });
 
@@ -210,7 +254,9 @@ export default function TheDescent() {
           </svg>
         </div>
 
-        {/* ── Ghost text ── */}
+        {/* ── Ghost text — crystallizes from the void ── */}
+        {/* clip-path + blur reveal: text emerges like it's
+            crystallizing out of liquid shadow, then dissolves back */}
         <div
           className="pointer-events-none absolute inset-0 flex items-center justify-center"
           style={{ zIndex: 7 }}
@@ -225,6 +271,7 @@ export default function TheDescent() {
                   opacity: 0,
                   color: "rgba(160, 170, 185, 0.75)",
                   textShadow: "0 0 40px rgba(160, 170, 185, 0.12)",
+                  willChange: "clip-path, filter, transform, opacity",
                 }}
               >
                 {line.text}
