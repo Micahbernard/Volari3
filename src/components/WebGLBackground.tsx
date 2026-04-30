@@ -9,6 +9,7 @@ import {
   type Theme,
   FLIP_DURATION_MS,
 } from "@/providers/ThemeProvider";
+import { getDescentProgress } from "@/lib/descentStore";
 
 // ─────────────────────────────────────────────────────────────
 // Performance constants
@@ -130,6 +131,8 @@ function FluidPlane() {
       uTransitionWarp: { value: 0 },
       uTransitionDir: { value: 1 },
       uTransitionOrigin: { value: new THREE.Vector2(0.5, 0.88) },
+      // Descent into the Abyss — 0 = surface, 1 = abyss floor.
+      uDescent: { value: 0 },
     };
   }, []);
 
@@ -241,6 +244,13 @@ function FluidPlane() {
     shaderTime.current = t;
     mat.uniforms.uTime.value = t;
     mat.uniforms.uScrollProgress.value = scrollProgress.current;
+
+    // ── Descent progress from TheDescent section ──
+    // Smooth lerp to avoid jarring jumps.
+    const descentTarget = getDescentProgress();
+    const descentCurrent = mat.uniforms.uDescent.value as number;
+    mat.uniforms.uDescent.value =
+      descentCurrent + (descentTarget - descentCurrent) * 0.06;
 
     mouseCurrent.current.x +=
       (mouseTarget.current.x - mouseCurrent.current.x) * MOUSE_LERP;

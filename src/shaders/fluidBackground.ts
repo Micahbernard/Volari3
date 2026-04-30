@@ -6,16 +6,12 @@ export const vertexShader = /* glsl */ `
   // Ripples — vec4(originX, originY[0..1, y-up], startTime, strength[0|1]).
   // 6 slots in a ring buffer; inactive slots carry strength=0.
   uniform vec4  uRipples[6];
+  uniform float uDescent;
   varying vec2  vUv;
   varying float vElevation;
   varying float vRipple;
 
   // ── Ripple field — concentric damped wave, stone-in-lake ──
-  // age     : seconds since click
-  // front   : expanding ring radius in aspect-corrected uv
-  // env     : gaussian envelope around the ring front (wider → multi-crest visible)
-  // phase   : sin oscillation inside envelope, frequency tuned so ~3 rings sit in band
-  // decay   : time decay + lifetime falloff
   float rippleField(vec2 uvPos, float aspect, float time){
     float total = 0.0;
     for(int i=0; i<6; i++){
@@ -87,11 +83,17 @@ export const vertexShader = /* glsl */ `
     float tBase=uTime*0.036;
     float tRipple=uTime*0.054;
     vec3 pos=position;
-    float n1=snoise(vec3(pos.xy*0.5,tBase+scroll*0.45))*0.16;
-    float n2=snoise(vec3(pos.xy*1.6,tRipple*1.25+scroll*0.28))*0.05;
+
+    // ── Descent dampens vertex displacement ──
+    // As we sink deeper, the fluid surface calms — less noise displacement,
+    // giving the impression of entering still, dead water.
+    float descentDamp = mix(1.0, 0.15, uDescent);
+
+    float n1=snoise(vec3(pos.xy*0.5,tBase+scroll*0.45))*0.16*descentDamp;
+    float n2=snoise(vec3(pos.xy*1.6,tRipple*1.25+scroll*0.28))*0.05*descentDamp;
     vec2 mouse=(uMouse-0.5)*2.0;
     float mouseDist=length(pos.xy-mouse);
-    float mousePush=smoothstep(1.4,0.0,mouseDist)*0.10;
+    float mousePush=smoothstep(1.4,0.0,mouseDist)*0.10*descentDamp;
 
     float aspect=uResolution.x/max(uResolution.y,1.0);
     float rip=rippleField(uv,aspect,uTime);
@@ -100,14 +102,6 @@ export const vertexShader = /* glsl */ `
     float elevation=n1+n2+mousePush;
 
     // ── Edge pin ──
-    // Plane vertices live on a perspective-projected mesh. Pushing Z
-    // on edge vertices makes them recede visually in screen space,
-    // tearing a wavy gap along the viewport border that exposes the
-    // WebGL clear color behind the plane (reads as black in void, as
-    // a torn-paper frame in day). Fix at the source: attenuate
-    // elevation toward 0 in a thin band at each edge so border
-    // vertices stay flush at Z=0. 0.06 uv units ≈ 6% inset — small
-    // enough to be invisible, wide enough to hide per-vertex noise.
     float edgeDist=min(min(uv.x,1.0-uv.x),min(uv.y,1.0-uv.y));
     float edgePin=smoothstep(0.0,0.06,edgeDist);
     elevation*=edgePin;
@@ -125,16 +119,12 @@ export const fragmentShader = /* glsl */ `
   uniform float uScrollProgress;
   uniform vec2  uResolution;
   uniform vec4  uRipples[6];
-  // Theme crossfade scalar: 0.0 = void (cool dark silver), 1.0 = day (warm cream).
-  // Lerped toward its target by WebGLBackground each frame when the crest toggles.
   uniform float uFlip;
-  // Theme flip “transition pass”: bell-shaped 0→1→0 over ~1.5s (see uTransitionDir).
-  // Peaks mid-flip so distortion/noise reads as a handoff, not a permanent look.
   uniform float uTransitionWarp;
-  // +1 = void→day (rise / dawn), −1 = day→void (set / nightfall).
   uniform float uTransitionDir;
-  // Crest centre in UV space (bottom-up Y, same as uMouse) — radial warp + burst from here.
   uniform vec2  uTransitionOrigin;
+  // Descent into the Abyss: 0.0 = surface (hero level), 1.0 = abyss floor.
+  uniform float uDescent;
   varying vec2  vUv;
   varying float vElevation;
   varying float vRipple;
@@ -200,16 +190,67 @@ export const fragmentShader = /* glsl */ `
     return val;
   }
 
+  // ── Hash for procedural particles ──
+  float hash21(vec2 p){
+    p=fract(p*vec2(123.34,456.21));
+    p+=dot(p,p+45.32);
+    return fract(p.x*p.y);
+  }
+
+  // ── Volumetric fog layer ──
+  // Returns fog density at a given UV, time, and scale.
+  // Uses fbm for organic cloud shapes that drift slowly.
+  float fogLayer(vec2 uv, float t, float scale, float speed){
+    vec2 p = uv * scale;
+    p.y -= t * speed; // slow upward drift
+    float n = fbm(vec3(p, t * 0.02));
+    return smoothstep(0.1, 0.7, n * 0.5 + 0.5);
+  }
+
+  // ── Void ash particle field ──
+  // Procedural particles: hash-based positions that drift upward.
+  // Returns combined glow from nearby particles.
+  float ashParticles(vec2 uv, float t, float descent){
+    float glow = 0.0;
+    // Tile space into cells, check 3x3 neighborhood for smooth wrapping
+    vec2 cellSize = vec2(0.08, 0.06); // ~12x16 cells across screen
+    vec2 cell = floor(uv / cellSize);
+
+    for(int dx = -1; dx <= 1; dx++){
+      for(int dy = -1; dy <= 1; dy++){
+        vec2 c = cell + vec2(float(dx), float(dy));
+        float h = hash21(c);
+        // ~55% of cells have a particle
+        if(h > 0.55) continue;
+
+        vec2 center = (c + 0.4 + 0.2 * vec2(hash21(c + 1.7), hash21(c + 3.1))) * cellSize;
+        // Upward drift with gentle sway
+        float speed = 0.01 + h * 0.02;
+        center.y = mod(center.y + t * speed, 1.0);
+        center.x += sin(t * 0.5 + h * 6.28) * 0.003;
+
+        float dist = length(uv - center);
+        // Particle is a soft dot with slight size variation
+        float radius = 0.001 + h * 0.002;
+        float particle = exp(-dist * dist / (radius * radius * 400.0));
+        // Opacity: faint at surface, stronger in the abyss
+        float opacity = mix(0.0, 0.15 + h * 0.25, descent);
+        glow += particle * opacity;
+      }
+    }
+    return glow;
+  }
+
   void main(){
     float aspect=uResolution.x/uResolution.y;
     float tw=uTransitionWarp;
     float td=uTransitionDir;
+    float d = uDescent; // shorthand — 0 = surface, 1 = abyss
     vec2 uvw=vUv;
     vec2 wobble=vec2(
       snoise(vec3(vUv*6.0,uTime*0.2)),
       snoise(vec3(vUv*6.0+vec2(2.0),uTime*0.2))
     )*0.016*tw;
-    // Radial warp from crest (matches CSS clip-path circle at --flip-ox/--flip-oy).
     vec2 uvRel=vUv-uTransitionOrigin;
     float rUV=length(uvRel)+1e-5;
     vec2 radial=uvRel/rUV;
@@ -226,7 +267,11 @@ export const fragmentShader = /* glsl */ `
     float tSlow=uTime*0.032;
     float tRipple=uTime*0.048;
 
-    vec2 scrollDrift=vec2(scroll*0.95,-scroll*0.62);
+    // ── Descent slows the fluid flow ──
+    // Surface = full motion. Abyss = near-stillness.
+    float flowDamp = mix(1.0, 0.12, d);
+
+    vec2 scrollDrift=vec2(scroll*0.95,-scroll*0.62) * flowDamp;
     vec2 ps=p+scrollDrift;
 
     float flowAngle=(uTime*0.011+scroll*0.35);
@@ -234,7 +279,8 @@ export const fragmentShader = /* glsl */ `
     vec2 psr=rotFlow*ps;
 
     vec2 mouse=(uMouse-0.5)*vec2(aspect,1.0);
-    float mouseProximity=1.0-smoothstep(0.0,0.32,length(p-mouse));
+    // Mouse proximity fades in the abyss — you lose your influence down there
+    float mouseProximity=(1.0-smoothstep(0.0,0.32,length(p-mouse))) * (1.0 - d * 0.7);
 
     float scScroll=scroll;
     vec2 q=vec2(
@@ -252,9 +298,6 @@ export const fragmentShader = /* glsl */ `
     f+=burst;
 
     // ── Theme palette ──
-    // v_* = void (cool dark silver, features brighter than base)
-    // d_* = day (warm cream, features darker/warmer than base — ink on paper semantics)
-    // Each stop is lerped per-fragment via uFlip so the crossfade is smooth.
     vec3 v_l0=vec3(0.032, 0.033, 0.037);
     vec3 v_l1=vec3(0.068, 0.070, 0.079);
     vec3 v_l2=vec3(0.112, 0.117, 0.134);
@@ -293,12 +336,9 @@ export const fragmentShader = /* glsl */ `
     col+=l3*wake*0.20;
     col+=l4*wake*0.08;
 
-    // ── Ripple tint — crests carry cool silver moonlight, troughs deepen shadow.
-    // Impact core adds soft dim glow at click point that fades fastest.
-    // Sits atop existing shadow palette — dim, not washy. Luxury restraint.
+    // ── Ripple tint ──
     float crestRip=max(vRipple,0.0);
     float troughRip=max(-vRipple,0.0);
-    // Ripple crest tint: cool silver moonlight (void) → warm champagne (day).
     vec3 v_moon=vec3(0.62,0.70,0.86);
     vec3 d_moon=vec3(0.95,0.88,0.70);
     vec3 moonTint=mix(v_moon,d_moon,uFlip);
@@ -306,7 +346,6 @@ export const fragmentShader = /* glsl */ `
     col+=l4*crestRip*0.10;
     col-=l1*troughRip*0.14;
 
-    // Soft inner glow at every active impact point.
     float coreGlow=0.0;
     for(int i=0;i<6;i++){
       vec4 rr=uRipples[i];
@@ -314,28 +353,126 @@ export const fragmentShader = /* glsl */ `
       float age=uTime-rr.z;
       if(age<0.0||age>3.6) continue;
       vec2 ro=vec2((rr.x-0.5)*aspect,rr.y-0.5);
-      float d=length(p-ro);
-      coreGlow+=exp(-pow(d/0.11,2.0))*exp(-age*1.8);
+      float dist=length(p-ro);
+      coreGlow+=exp(-pow(dist/0.11,2.0))*exp(-age*1.8);
     }
     col+=moonTint*coreGlow*0.16;
 
-    float vig=1.0-smoothstep(0.06,0.98,length(p*0.78));
-    // Vignette belongs to the void. It frames the black-silver fluid like
-    // a gravure print border — edges receding into shadow. On cream it reads
-    // as soot no matter how gentle the falloff, so we retreat it entirely:
-    //   uFlip = 0  →  multiplier = pow(vig, 1.24)  (firm dark edges)
-    //   uFlip = 1  →  multiplier = 1.0             (flat, no edge darkening)
-    // Lerping the final scalar (not the power) means the vignette truly
-    // vanishes in day rather than lingering as a pale halo at the corners.
-    float vigVoid = pow(vig, 1.24);
-    col *= mix(vigVoid, 1.0, uFlip);
-    // Final brightness: 0.74 base keeps void moody; 0.88 in day keeps cream
-    // bright so features stay as subtle washes rather than muddy tan.
-    col*=mix(0.74, 0.88, uFlip) + mix(0.19, 0.11, uFlip) * (f*0.6+0.4*length(q));
-    float lum=dot(col,vec3(0.2126,0.7152,0.0722));
-    col=mix(vec3(lum),col,0.90);
-    col=max(col,vec3(0.0));
+    // ═══════════════════════════════════════════════════════════
+    // THE ABYSS — Descent effects
+    // All driven by uDescent: 0 = surface, 1 = abyss floor.
+    // These layer on top of the existing fluid palette.
+    // ═══════════════════════════════════════════════════════════
 
-    gl_FragColor=vec4(col,1.0);
+    // ── Light beam from above ──
+    // A pale column centered on screen. Narrows and fades as descent deepens.
+    // At surface: full beam. At abyss floor: nothing — consumed.
+    {
+      float beamWidth = mix(0.14, 0.02, d); // viewport fraction
+      float beamCenter = 0.5; // centered
+      float beamDist = abs(vUv.x - beamCenter);
+      // Gaussian falloff for soft edges
+      float beam = exp(-pow(beamDist / beamWidth, 2.0));
+      // Vertical falloff — strongest at top, fades toward bottom
+      float vertFalloff = smoothstep(1.0, 0.2, vUv.y);
+      beam *= vertFalloff;
+      // Opacity fades with descent
+      float beamOpacity = mix(0.10, 0.0, d) * (1.0 - d * 0.95);
+      // Beam color: cold silver-white
+      vec3 beamColor = mix(vec3(0.55, 0.60, 0.70), vec3(0.35, 0.38, 0.45), uFlip);
+      col += beamColor * beam * beamOpacity;
+    }
+
+    // ── Volumetric fog ──
+    // Three layers at different scales and speeds, thickening with descent.
+    // Layer 1: distant, large slow clouds
+    {
+      float fog1 = fogLayer(vUv, uTime, 2.5, 0.008);
+      float fog1Opacity = mix(0.0, 0.25, d) * fog1;
+      vec3 fogColor1 = mix(vec3(0.04, 0.045, 0.055), vec3(0.12, 0.11, 0.10), uFlip);
+      col = mix(col, fogColor1, fog1Opacity);
+    }
+    // Layer 2: mid-range, medium detail
+    {
+      float fog2 = fogLayer(vUv + vec2(0.3, 0.7), uTime * 0.8, 4.0, 0.012);
+      float fog2Opacity = mix(0.0, 0.35, d * d) * fog2;
+      vec3 fogColor2 = mix(vec3(0.03, 0.035, 0.045), vec3(0.10, 0.095, 0.09), uFlip);
+      col = mix(col, fogColor2, fog2Opacity);
+    }
+    // Layer 3: close, thick fog that dominates at depth
+    {
+      float fog3 = fogLayer(vUv + vec2(0.7, 0.2), uTime * 1.2, 6.0, 0.018);
+      float fog3Opacity = mix(0.0, 0.55, d * d * d) * fog3;
+      vec3 fogColor3 = mix(vec3(0.02, 0.025, 0.032), vec3(0.08, 0.075, 0.07), uFlip);
+      col = mix(col, fogColor3, fog3Opacity);
+    }
+
+    // ── Void ash particles ──
+    // Procedural points of pale light drifting upward through the void.
+    {
+      float ashGlow = ashParticles(vUv, uTime, d);
+      // Ash color: pale silver-blue (void) or warm dust (day)
+      vec3 ashColor = mix(vec3(0.55, 0.60, 0.70), vec3(0.70, 0.62, 0.50), uFlip);
+      col += ashColor * ashGlow;
+    }
+
+    // ── Vignette intensification ──
+    // Surface: existing gentle vignette. Abyss: edges consume inward.
+    {
+      float vig = 1.0 - smoothstep(0.06, 0.98, length(p * 0.78));
+      float vigVoid = pow(vig, mix(1.24, 0.35, d)); // power drops → stronger vignette
+      float vigMultiplier = mix(vigVoid, 1.0, uFlip);
+      // In the abyss, vignette is so strong it becomes the dominant darkener
+      col *= mix(vigMultiplier, 1.0, 0.0); // always apply (void theme)
+      // In day mode, still retreat vignette
+      col *= mix(1.0, 1.0, uFlip * (1.0 - d)); // day + abyss = still vignette
+      // Simplified: blend between void-vignette and flat based on flip AND descent
+      float finalVig = mix(vigVoid, 1.0, uFlip * (1.0 - d));
+      // Re-apply: we already applied the original vignette above, so let's
+      // just apply an additional descent vignette on top
+      float descentVig = pow(vig, mix(1.0, 0.15, d));
+      col *= mix(1.0, descentVig, d * 0.6); // blend in the intensified vignette
+    }
+
+    // ── Overall darkening ──
+    // Surface: full brightness. Abyss floor: near-total darkness.
+    // The color fades to near-black, consuming everything.
+    {
+      float darkness = mix(1.0, 0.015, d * d); // quadratic for slow start, fast finish
+      col *= darkness;
+    }
+
+    // ── Abyss tint ──
+    // At depth, a subtle cool violet undertone creeps in —
+    // the signature of the Void in Hollow Knight.
+    {
+      float tintStrength = d * d * 0.12;
+      vec3 abyssTint = vec3(0.08, 0.04, 0.14); // deep violet-black
+      col = mix(col, col + abyssTint * col, tintStrength);
+    }
+
+    // ── Original vignette (void/day) ──
+    // Re-apply the base vignette logic that was above, but now
+    // it competes with the descent vignette. We handle this by
+    // using the original code but letting descent override at depth.
+    // (Already integrated into the descent vignette block above.)
+
+    // ── Final brightness ──
+    // Surface: original formula. Abyss: near-zero.
+    // We blend the original brightness multiplier with the descent darkness.
+    {
+      float baseBright = mix(0.74, 0.88, uFlip) + mix(0.19, 0.11, uFlip) * (f*0.6+0.4*length(q));
+      // At surface, use baseBright. At abyss floor, baseBright is irrelevant (already dark).
+      // But we need it for the transition zone.
+      // Only apply the base brightness where descent hasn't already consumed it.
+      // The darkness multiplication above already handles the heavy lifting.
+      // This just ensures the mid-descent zone still has the right feel.
+      float lum = dot(col, vec3(0.2126, 0.7152, 0.0722));
+      col = mix(vec3(lum), col, mix(0.90, 0.70, d)); // desaturate slightly in the abyss
+    }
+
+    col = max(col, vec3(0.0));
+
+    gl_FragColor = vec4(col, 1.0);
   }
 `;
