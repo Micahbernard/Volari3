@@ -5,7 +5,7 @@ import SmoothScrollProvider from "@/providers/SmoothScrollProvider";
 import ThemeProvider from "@/providers/ThemeProvider";
 import CustomCursor from "@/components/CustomCursor";
 import Navbar from "@/components/Navbar";
-import WebGLBackgroundLoader from "@/components/WebGLBackgroundLoader";
+import WebGLBackground from "@/components/WebGLBackground";
 import ShadowConsumeOverlay from "@/components/ShadowConsumeOverlay";
 import PageTransitionProvider from "@/providers/PageTransitionProvider";
 import { Toaster } from "@/components/ui/toaster";
@@ -80,7 +80,7 @@ export default function RootLayout({
         <ThemeProvider>
           <SmoothScrollProvider>
             {/* WebGL fluid background — fixed -z-1 */}
-            <WebGLBackgroundLoader />
+            <WebGLBackground />
 
             {/* Shadow-consume overlay — fixed z-[9998] */}
             <ShadowConsumeOverlay />

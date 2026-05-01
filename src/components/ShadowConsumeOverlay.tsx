@@ -6,6 +6,7 @@ import {
   useLayoutEffect,
   useMemo,
   useRef,
+  useState,
   type MutableRefObject,
 } from "react";
 import * as THREE from "three";
@@ -225,6 +226,11 @@ function ShadowPlane({ activeRef }: ShadowPlaneProps) {
  * day → void flips.
  */
 export default function ShadowConsumeOverlay() {
+  // Don't render Canvas until client-side hydration is complete.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  if (!mounted) return null;
+
   const activeRef = useRef<ActiveState | null>(null);
 
   // R3F sizes its <canvas> via an internal ResizeObserver on the

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useMemo, useEffect, useCallback } from "react";
+import { useRef, useMemo, useEffect, useCallback, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { vertexShader, fragmentShader } from "@/shaders/fluidBackground";
@@ -319,6 +319,12 @@ function FluidPlane() {
 //   antialias: false, alpha: false, stencil: false, depth: false
 // ─────────────────────────────────────────────────────────────
 export default function WebGLBackground() {
+  // Don't render Canvas until client-side hydration is complete.
+  // R3F Canvas requires a WebGL context which doesn't exist during SSR.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  if (!mounted) return null;
+
   return (
     <div
       className="pointer-events-none fixed inset-0 -z-1"

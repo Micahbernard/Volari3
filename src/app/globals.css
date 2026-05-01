@@ -764,6 +764,14 @@ body.theme-flipping *::after {
   44%                { opacity: 0.14; }
 }
 
+/* Curtain fallback: if GSAP fails to lift the curtain within 4s,
+   this CSS animation forces it off-screen. GSAP's yPercent: -100
+   overrides this once it kicks in. */
+@keyframes curtain-fallback {
+  0%, 70% { transform: translateY(0); }
+  100%    { transform: translateY(-100%); }
+}
+
 .lens-ghost {
   animation: lens-ghost-flicker 9s ease-in-out infinite;
   transform-origin: 24px 24px;

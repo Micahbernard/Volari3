@@ -350,7 +350,7 @@ export default function Home() {
       <div
         ref={overlayRef}
         className="fixed inset-0 z-40 bg-v-black"
-        style={{ willChange: "transform" }}
+        style={{ willChange: "transform", animation: "curtain-fallback 4s ease-in forwards" }}
         aria-hidden="true"
       />
 

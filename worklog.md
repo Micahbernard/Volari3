@@ -109,3 +109,28 @@ Stage Summary:
 - WebGL background is now dynamically imported with ssr: false via a Client Component wrapper
 - Files created: /src/components/WebGLBackgroundLoader.tsx
 - Files modified: /src/app/layout.tsx, /src/shaders/fluidBackground.ts (Voronoi 5x5 -> 3x3)
+---
+Task ID: 4
+Agent: Main Agent
+Task: Fix infinite loading - site never renders past Z splash screen
+
+Work Log:
+- User reported site stuck on Z platform loading screen (infinite loading)
+- Diagnosed: WebGL Canvas components (WebGLBackground, ShadowConsumeOverlay) were crashing server-side rendering
+- Attempted fix with next/dynamic ssr: false in layout.tsx - failed because Next.js 16 doesn't allow ssr: false in Server Components
+- Created WebGLBackgroundLoader.tsx and ShadowConsumeOverlayLoader.tsx as "use client" wrappers - server stopped crashing but still died after requests
+- Reverted dynamic import approach, added mounted state guards directly in components:
+  - WebGLBackground: useState(false) + useEffect to setMounted(true), returns null until mounted
+  - ShadowConsumeOverlay: same pattern
+- Added CSS curtain-fallback animation to page.tsx overlay: if GSAP fails, CSS auto-lifts curtain after 4s
+- Added @keyframes curtain-fallback in globals.css
+- Cleaned up temporary loader files
+- Build passes cleanly
+- Server responds with 200 and 33KB of HTML content
+
+Stage Summary:
+- Root cause: R3F Canvas components rendering during SSR crashed the Node process
+- Fix: mounted state guards prevent Canvas rendering until client-side hydration
+- Backup: CSS curtain-fallback ensures page is never permanently stuck behind overlay
+- Files modified: WebGLBackground.tsx, ShadowConsumeOverlay.tsx, page.tsx, globals.css
+- Files deleted: WebGLBackgroundLoader.tsx, ShadowConsumeOverlayLoader.tsx
