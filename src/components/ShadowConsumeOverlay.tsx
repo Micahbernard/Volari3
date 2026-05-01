@@ -228,10 +228,16 @@ function ShadowPlane({ activeRef }: ShadowPlaneProps) {
 export default function ShadowConsumeOverlay() {
   // Don't render Canvas until client-side hydration is complete.
   const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
-  if (!mounted) return null;
+
+  // ── ALL hooks MUST be above the early return ──
+  // Previously, useRef, useLayoutEffect, and useEffect were below the
+  // `if (!mounted) return null` guard. This changed the hook call order
+  // between the first render (hooks skipped) and the second render
+  // (hooks called) — a fatal Rules of Hooks violation.
 
   const activeRef = useRef<ActiveState | null>(null);
+
+  useEffect(() => { setMounted(true); }, []);
 
   // R3F sizes its <canvas> via an internal ResizeObserver on the
   // wrapper div. When two Canvas instances mount in the same React
@@ -314,6 +320,9 @@ export default function ShadowConsumeOverlay() {
       return { peak, finished };
     });
   }, []);
+
+  // ── EARLY RETURN — all hooks above this line ──
+  if (!mounted) return null;
 
   return (
     <div
