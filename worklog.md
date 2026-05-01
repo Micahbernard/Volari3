@@ -60,3 +60,31 @@ Stage Summary:
 - Ghost text now uses clip-path polygon reveal + blur dissolve (not cheap opacity fade)
 - Descent pacing is heavier and more cinematic (scrub: 1.2)
 - Key files modified: /src/shaders/fluidBackground.ts, /src/components/TheDescent.tsx
+---
+Task ID: 2
+Agent: Main Agent
+Task: Add proper void bubbles to the shader using Voronoi/Worley distance fields
+
+Work Log:
+- User reported "we still have no void bubbles" - the fBm approach created organic tendrils but not distinct floating orbs
+- Added hashVoronoi() and hashVoronoi2() functions for deterministic pseudo-random feature points
+- Added voronoiBubbles() function with proper 5x5 neighborhood search:
+  - Returns vec3(minDist, minDist2, cellHash) for per-bubble variation
+  - Each bubble: hash-randomized position within cell, upward drift (mod wrapping), horizontal sway (sinusoidal)
+  - 5x5 neighborhood ensures no bubble edge ever extends past the search area = zero grid clipping
+  - Euclidean distance (length()) is mathematically continuous = no hard boundaries between cells
+- Replaced ashGlow (fBm band-pass) with 3 layers of Voronoi void bubbles:
+  - Layer 1: scale=12 (~144 bubbles), radius 0.012-0.020, bright core + Voronoi edge glow, slow rise
+  - Layer 2: scale=25 (~625 fine bubbles), radius 0.006-0.010, faster rise, dimmer
+  - Layer 3: scale=50 (~2500 dust specks), radius 0.003-0.005, slowest rise, barely visible
+- All bubble colors are cold pale silver (no warmth, no violet): vec3(0.35-0.55, 0.38-0.58, 0.44-0.64)
+- Bubble brightness scales with uDescent (only visible during descent)
+- Fixed GLSL comment parsing issue: replaced em-dash + backtick combo that broke the parser
+- Build passes cleanly, dev server starts without errors
+
+Stage Summary:
+- Void bubbles are now implemented as proper Voronoi distance field orbs
+- Three density layers: large atmospheric orbs, medium ash, fine dust
+- Zero grid clipping (5x5 neighborhood + continuous Euclidean distance)
+- Colors remain strict monochrome: cold silver, no warmth, no violet
+- Key file modified: /src/shaders/fluidBackground.ts

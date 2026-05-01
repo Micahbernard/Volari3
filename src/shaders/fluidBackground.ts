@@ -193,7 +193,7 @@ export const fragmentShader = /* glsl */ `
 
   // ═══════════════════════════════════════════════════════════
   // VOID DESCENT — All visual effects computed as continuous
-  // noise fields. No grid partitioning. No cells. No clipping.
+  // noise fields. No grid partitioning. No clipping.
   //
   // Design laws:
   //   - Absolute #000000 black. No tints. No warmth. No violet.
@@ -201,7 +201,86 @@ export const fragmentShader = /* glsl */ `
   //     inky edges as darkness consumes the screen.
   //   - Light beam: physical shaft of light eaten by the void.
   //     Noise-distorted edges, not a soft gaussian blur.
+  //   - Void bubbles: distinct floating orbs via Voronoi distance
+  //     fields — continuous Euclidean distance, zero grid clipping.
   // ═══════════════════════════════════════════════════════════
+
+  // ── Hash for Voronoi feature points ──
+  // Deterministic pseudo-random from integer cell coordinates.
+  // Returns 0..1
+  float hashVoronoi(vec2 p){
+    p = fract(p * vec2(123.34, 456.21));
+    p += dot(p, p + 45.32);
+    return fract(p.x * p.y);
+  }
+  vec2 hashVoronoi2(vec2 p){
+    return vec2(hashVoronoi(p), hashVoronoi(p + vec2(71.37, 93.17)));
+  }
+
+  // Void bubbles - Voronoi distance field
+  // Proper Voronoi: finds nearest feature point across a 5x5
+  // neighborhood (wide enough that no bubble edge ever clips),
+  // then uses smooth Euclidean distance to create circular
+  // orbs. Distance field is CONTINUOUS - no hard boundaries
+  // between cells because length() has no discontinuities.
+  //
+  // Each bubble:
+  //   - Is centered at a hash-randomized position within its cell
+  //   - Drifts upward over time (void ash buoyancy)
+  //   - Has gentle horizontal sway
+  //   - Has a soft circular glow that fades smoothly at edges
+  //   - Opacity scales with descent depth
+  //
+  // Returns: vec3(minDist, minDist2, cellHash)
+  //   minDist  = distance to nearest feature point
+  //   minDist2 = distance to second-nearest (for edge glow)
+  //   cellHash = hash of the nearest cell (for per-bubble variation)
+  vec3 voronoiBubbles(vec2 uv, float t, float scale){
+    vec2 cellSize = vec2(1.0) / scale;
+    vec2 cell = floor(uv * scale);
+
+    float minDist = 10.0;
+    float minDist2 = 10.0;
+    float closestHash = 0.0;
+
+    // 5x5 neighborhood — wide enough that no bubble radius
+    // can ever extend past the search area. Zero clipping.
+    for(int dx = -2; dx <= 2; dx++){
+      for(int dy = -2; dy <= 2; dy++){
+        vec2 c = cell + vec2(float(dx), float(dy));
+
+        // Random position within cell [0..1]
+        vec2 randOffset = hashVoronoi2(c);
+
+        // Feature point position in UV space
+        vec2 featurePos = (c + 0.1 + 0.8 * randOffset) / scale;
+
+        // ── Upward drift ──
+        // Bubbles rise through the void like ash buoyancy.
+        // Speed varies per-bubble (some fast, some slow).
+        float riseSpeed = 0.008 + randOffset.x * 0.014;
+        featurePos.y = mod(featurePos.y + t * riseSpeed, 1.0);
+
+        // ── Horizontal sway ──
+        // Gentle sinusoidal drift — each bubble sways differently.
+        float swayAmp = 0.003 + randOffset.y * 0.006;
+        featurePos.x += sin(t * 0.4 + randOffset.x * 62.83) * swayAmp;
+
+        float dist = length(uv - featurePos);
+
+        // Track nearest and second-nearest
+        if(dist < minDist){
+          minDist2 = minDist;
+          minDist = dist;
+          closestHash = randOffset.x;
+        } else if(dist < minDist2){
+          minDist2 = dist;
+        }
+      }
+    }
+
+    return vec3(minDist, minDist2, closestHash);
+  }
 
   // ── Viscous void tendrils ──
   // High-frequency fBm with brutal smoothstep clamping.
@@ -247,36 +326,6 @@ export const fragmentShader = /* glsl */ `
       // Very tight threshold → sparse, isolated specks
       float mote = smoothstep(0.52, 0.72, n);
       result += mote * 0.20 * descent;
-    }
-
-    return result;
-  }
-
-  // ── Void ash glow ──
-  // Inverted tendril field: where the void tendrils AREN'T,
-  // faint pale specks of residual light survive. This creates
-  // the impression of pale ash particles floating in the darkness.
-  // Again: no grid, no cells. Continuous noise only.
-  float ashGlow(vec2 uv, float t, float descent){
-    float result = 0.0;
-
-    // Pale ash — bright specks in the gaps between tendrils
-    {
-      vec3 p = vec3(uv * 18.0 + vec2(9.7, 2.4), t * 0.035);
-      p.y -= t * 0.015;
-      float n = fbm(p);
-      // Inverted: bright where noise is in a narrow band
-      float ash = smoothstep(0.48, 0.56, n) - smoothstep(0.56, 0.68, n);
-      result += ash * 0.12 * descent;
-    }
-
-    // Even finer ash — barely visible, ambient
-    {
-      vec3 p = vec3(uv * 32.0 + vec2(4.1, 7.8), t * 0.05);
-      p.y -= t * 0.022;
-      float n = fbm(p);
-      float fine = smoothstep(0.55, 0.62, n) - smoothstep(0.62, 0.72, n);
-      result += fine * 0.06 * descent;
     }
 
     return result;
@@ -477,15 +526,74 @@ export const fragmentShader = /* glsl */ `
       col = mix(col, vec3(0.0), voidDensity);
     }
 
-    // ── Void ash glow ──
-    // Pale specks of residual light in the gaps.
-    // These are the floating ash particles — but generated
-    // from continuous noise, never from a grid.
+    // ── Void bubbles ──
+    // Distinct floating orbs of void energy, rising through
+    // the darkness. Voronoi distance field = continuous,
+    // circular, zero clipping. Each bubble is a soft glowing
+    // orb with a bright core and gentle falloff.
     {
-      float ash = ashGlow(vUv, uTime, d);
-      // Ash color: cold pale silver. No warmth.
-      vec3 ashColor = vec3(0.45, 0.48, 0.54);
-      col += ashColor * ash;
+      // Layer 1: Large, slow-rising void bubbles — the primary
+      // visible orbs that define the Abyss atmosphere.
+      // Scale ~12 means ~144 cells on screen → ~144 bubbles
+      {
+        vec3 voro = voronoiBubbles(vUv, uTime, 12.0);
+        float dist = voro.x;   // distance to nearest bubble center
+        float dist2 = voro.y;  // distance to second-nearest
+        float bHash = voro.z;  // per-bubble random value
+
+        // Bubble radius — varies slightly per bubble
+        float radius = 0.012 + bHash * 0.008;
+
+        // Soft circular glow: bright core, gentle falloff
+        // This creates the physical "orb" look
+        float bubble = exp(-pow(dist / radius, 2.0));
+
+        // Edge highlight: where two bubbles are close,
+        // a faint bright line appears (Voronoi edge glow)
+        float edgeGlow = smoothstep(0.015, 0.003, dist2 - dist) * 0.08;
+
+        // Combined bubble brightness
+        float bubbleBrightness = (bubble * 0.18 + edgeGlow) * d;
+
+        // Color: cold pale silver — the signature void bubble.
+        // Slightly brighter in the core, dimmer at edges.
+        vec3 bubbleColor = mix(vec3(0.35, 0.38, 0.44), vec3(0.55, 0.58, 0.64), bubble);
+        col += bubbleColor * bubbleBrightness;
+      }
+
+      // Layer 2: Smaller, faster, more numerous bubbles —
+      // the fine particulate void ash. These are the tiny
+      // specks you see in Hollow Knight's Abyss.
+      {
+        vec3 voro = voronoiBubbles(vUv + vec2(0.37, 0.71), uTime * 1.3, 25.0);
+        float dist = voro.x;
+        float bHash = voro.z;
+
+        float radius = 0.006 + bHash * 0.004;
+        float bubble = exp(-pow(dist / radius, 2.0));
+
+        // Finer bubbles are dimmer and more sparse
+        float bubbleBrightness = bubble * 0.10 * d;
+
+        vec3 bubbleColor = vec3(0.40, 0.43, 0.49);
+        col += bubbleColor * bubbleBrightness;
+      }
+
+      // Layer 3: Very fine, distant void dust — barely visible
+      // specks that add depth and atmosphere. Slowest rising.
+      {
+        vec3 voro = voronoiBubbles(vUv + vec2(0.83, 0.19), uTime * 0.7, 50.0);
+        float dist = voro.x;
+        float bHash = voro.z;
+
+        float radius = 0.003 + bHash * 0.002;
+        float bubble = exp(-pow(dist / radius, 2.0));
+
+        float bubbleBrightness = bubble * 0.05 * d;
+
+        vec3 bubbleColor = vec3(0.38, 0.40, 0.45);
+        col += bubbleColor * bubbleBrightness;
+      }
     }
 
     // ── Vignette intensification ──
