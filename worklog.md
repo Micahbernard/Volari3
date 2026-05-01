@@ -88,3 +88,24 @@ Stage Summary:
 - Zero grid clipping (5x5 neighborhood + continuous Euclidean distance)
 - Colors remain strict monochrome: cold silver, no warmth, no violet
 - Key file modified: /src/shaders/fluidBackground.ts
+---
+Task ID: 3
+Agent: Main Agent
+Task: Fix 404/server crash caused by WebGL SSR rendering
+
+Work Log:
+- User reported 404 on the site
+- Investigated: dev server was crashing after the first request
+- Root cause: WebGLBackground component with React Three Fiber <Canvas> was being server-rendered
+- Next.js 16 does not allow `ssr: false` with `next/dynamic` in Server Components
+- Created /src/components/WebGLBackgroundLoader.tsx as a "use client" wrapper that uses dynamic() with ssr: false
+- Updated layout.tsx to import WebGLBackgroundLoader instead of WebGLBackground directly
+- Also reduced Voronoi neighborhood from 5x5 to 3x3 (sufficient for Voronoi, reduces GPU load from 225 to 81 iterations per call)
+- Server now stays alive through multiple consecutive requests
+- Build passes cleanly
+
+Stage Summary:
+- 404 fixed: server no longer crashes
+- WebGL background is now dynamically imported with ssr: false via a Client Component wrapper
+- Files created: /src/components/WebGLBackgroundLoader.tsx
+- Files modified: /src/app/layout.tsx, /src/shaders/fluidBackground.ts (Voronoi 5x5 -> 3x3)

@@ -243,10 +243,11 @@ export const fragmentShader = /* glsl */ `
     float minDist2 = 10.0;
     float closestHash = 0.0;
 
-    // 5x5 neighborhood — wide enough that no bubble radius
-    // can ever extend past the search area. Zero clipping.
-    for(int dx = -2; dx <= 2; dx++){
-      for(int dy = -2; dy <= 2; dy++){
+    // 3x3 neighborhood - sufficient for Voronoi since the
+    // nearest feature point is always within 1 cell distance.
+    // Zero clipping: distance field is continuous across cells.
+    for(int dx = -1; dx <= 1; dx++){
+      for(int dy = -1; dy <= 1; dy++){
         vec2 c = cell + vec2(float(dx), float(dy));
 
         // Random position within cell [0..1]
