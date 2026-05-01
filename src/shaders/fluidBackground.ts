@@ -527,76 +527,6 @@ export const fragmentShader = /* glsl */ `
       col = mix(col, vec3(0.0), voidDensity);
     }
 
-    // ── Void bubbles ──
-    // Distinct floating orbs of void energy, rising through
-    // the darkness. Voronoi distance field = continuous,
-    // circular, zero clipping. Each bubble is a soft glowing
-    // orb with a bright core and gentle falloff.
-    {
-      // Layer 1: Large, slow-rising void bubbles — the primary
-      // visible orbs that define the Abyss atmosphere.
-      // Scale ~12 means ~144 cells on screen → ~144 bubbles
-      {
-        vec3 voro = voronoiBubbles(vUv, uTime, 12.0);
-        float dist = voro.x;   // distance to nearest bubble center
-        float dist2 = voro.y;  // distance to second-nearest
-        float bHash = voro.z;  // per-bubble random value
-
-        // Bubble radius — varies slightly per bubble
-        float radius = 0.012 + bHash * 0.008;
-
-        // Soft circular glow: bright core, gentle falloff
-        // This creates the physical "orb" look
-        float bubble = exp(-pow(dist / radius, 2.0));
-
-        // Edge highlight: where two bubbles are close,
-        // a faint bright line appears (Voronoi edge glow)
-        float edgeGlow = smoothstep(0.015, 0.003, dist2 - dist) * 0.08;
-
-        // Combined bubble brightness
-        float bubbleBrightness = (bubble * 0.18 + edgeGlow) * d;
-
-        // Color: cold pale silver — the signature void bubble.
-        // Slightly brighter in the core, dimmer at edges.
-        vec3 bubbleColor = mix(vec3(0.35, 0.38, 0.44), vec3(0.55, 0.58, 0.64), bubble);
-        col += bubbleColor * bubbleBrightness;
-      }
-
-      // Layer 2: Smaller, faster, more numerous bubbles —
-      // the fine particulate void ash. These are the tiny
-      // specks you see in Hollow Knight's Abyss.
-      {
-        vec3 voro = voronoiBubbles(vUv + vec2(0.37, 0.71), uTime * 1.3, 25.0);
-        float dist = voro.x;
-        float bHash = voro.z;
-
-        float radius = 0.006 + bHash * 0.004;
-        float bubble = exp(-pow(dist / radius, 2.0));
-
-        // Finer bubbles are dimmer and more sparse
-        float bubbleBrightness = bubble * 0.10 * d;
-
-        vec3 bubbleColor = vec3(0.40, 0.43, 0.49);
-        col += bubbleColor * bubbleBrightness;
-      }
-
-      // Layer 3: Very fine, distant void dust — barely visible
-      // specks that add depth and atmosphere. Slowest rising.
-      {
-        vec3 voro = voronoiBubbles(vUv + vec2(0.83, 0.19), uTime * 0.7, 50.0);
-        float dist = voro.x;
-        float bHash = voro.z;
-
-        float radius = 0.003 + bHash * 0.002;
-        float bubble = exp(-pow(dist / radius, 2.0));
-
-        float bubbleBrightness = bubble * 0.05 * d;
-
-        vec3 bubbleColor = vec3(0.38, 0.40, 0.45);
-        col += bubbleColor * bubbleBrightness;
-      }
-    }
-
     // ── Vignette intensification ──
     // Surface: gentle vignette. Abyss: edges consume inward.
     // The void presses in from the edges.
@@ -621,6 +551,64 @@ export const fragmentShader = /* glsl */ `
     {
       float lum = dot(col, vec3(0.2126, 0.7152, 0.0722));
       col = mix(col, vec3(lum), d * 0.8);
+    }
+
+    // ── Void bubbles (ash particles) ──
+    // PLACED AFTER darkening + desaturation so they survive.
+    // These are the bright specks floating in the darkness —
+    // the signature Hollow Knight Abyss ash. They must be
+    // additive and AFTER the multiplicative darkening, or
+    // they get crushed to zero at max descent.
+    {
+      // Layer 1: Large, slow-rising void bubbles — the primary
+      // visible orbs that define the Abyss atmosphere.
+      {
+        vec3 voro = voronoiBubbles(vUv, uTime, 12.0);
+        float dist = voro.x;
+        float dist2 = voro.y;
+        float bHash = voro.z;
+
+        float radius = 0.012 + bHash * 0.008;
+        float bubble = exp(-pow(dist / radius, 2.0));
+        float edgeGlow = smoothstep(0.015, 0.003, dist2 - dist) * 0.08;
+
+        // Brightness: scales with descent, but since this is AFTER
+        // darkening, these specks glow against the black void.
+        float bubbleBrightness = (bubble * 0.35 + edgeGlow) * d;
+
+        vec3 bubbleColor = mix(vec3(0.35, 0.38, 0.44), vec3(0.55, 0.58, 0.64), bubble);
+        col += bubbleColor * bubbleBrightness;
+      }
+
+      // Layer 2: Smaller, faster, more numerous ash specks.
+      {
+        vec3 voro = voronoiBubbles(vUv + vec2(0.37, 0.71), uTime * 1.3, 25.0);
+        float dist = voro.x;
+        float bHash = voro.z;
+
+        float radius = 0.006 + bHash * 0.004;
+        float bubble = exp(-pow(dist / radius, 2.0));
+
+        float bubbleBrightness = bubble * 0.20 * d;
+
+        vec3 bubbleColor = vec3(0.40, 0.43, 0.49);
+        col += bubbleColor * bubbleBrightness;
+      }
+
+      // Layer 3: Very fine, distant void dust.
+      {
+        vec3 voro = voronoiBubbles(vUv + vec2(0.83, 0.19), uTime * 0.7, 50.0);
+        float dist = voro.x;
+        float bHash = voro.z;
+
+        float radius = 0.003 + bHash * 0.002;
+        float bubble = exp(-pow(dist / radius, 2.0));
+
+        float bubbleBrightness = bubble * 0.10 * d;
+
+        vec3 bubbleColor = vec3(0.38, 0.40, 0.45);
+        col += bubbleColor * bubbleBrightness;
+      }
     }
 
     col = max(col, vec3(0.0));

@@ -134,3 +134,23 @@ Stage Summary:
 - Backup: CSS curtain-fallback ensures page is never permanently stuck behind overlay
 - Files modified: WebGLBackground.tsx, ShadowConsumeOverlay.tsx, page.tsx, globals.css
 - Files deleted: WebGLBackgroundLoader.tsx, ShadowConsumeOverlayLoader.tsx
+---
+Task ID: 1
+Agent: main
+Task: Revert fog changes and restore ash particles in fluidBackground.ts
+
+Work Log:
+- Read current fluidBackground.ts — confirmed NO fog section exists (only "not soft fog" comments)
+- Checked git diff HEAD~5 to understand what changed: old `ashParticles` (hash21-based) was replaced with `voronoiBubbles`, old `fogLayer` was replaced with `voidTendrils`, overall darkening changed from `mix(1.0, 0.015, d*d)` to `mix(1.0, 0.0, d*d)`
+- Root cause identified: void bubbles (ash) were added BEFORE the overall darkening step, which multiplies by `mix(1.0, 0.0, d*d)` — at max descent this is ZERO, annihilating all ash particle brightness
+- Old version left 1.5% residual light; new version goes to absolute zero
+- Fix: moved void bubbles section to AFTER darkening + desaturation, so ash particles survive as bright specks against the black void
+- Also increased bubble brightness (0.18→0.35 for layer 1, 0.10→0.20 for layer 2, 0.05→0.10 for layer 3) since they no longer need to fight through the darkening multiplier
+- No fog section in the shader — confirmed
+- ShadowConsumeOverlay hooks order was already fixed in previous session
+- Build verified: `npx next build` compiles successfully
+
+Stage Summary:
+- Ash particles restored: moved void bubbles to post-darkening pipeline position
+- Fog section: confirmed absent
+- Pipeline order now: base fluid → light beam → void tendrils → vignette → darkening → desaturation → void bubbles (ash) → output
