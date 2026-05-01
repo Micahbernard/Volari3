@@ -553,62 +553,37 @@ export const fragmentShader = /* glsl */ `
       col = mix(col, vec3(lum), d * 0.8);
     }
 
-    // ── Void bubbles (ash particles) ──
+    // ── Void ash particles ──
+    // Fluid-integrated simplex noise. Four principles:
+    //   1. The Swirl — UVs warped by hero fluid's q vector
+    //   2. Anti-Gravity — noise field slides down, particles rise up
+    //   3. Sparse Peak Isolation — smoothstep(0.96, 0.98), top ~2% only
+    //   4. The Blend — pure white vec3(1.0) added AFTER darkening
+    //
     // PLACED AFTER darkening + desaturation so they survive.
-    // These are the bright specks floating in the darkness —
-    // the signature Hollow Knight Abyss ash. They must be
-    // additive and AFTER the multiplicative darkening, or
-    // they get crushed to zero at max descent.
+    // The ash burns through the black — immune to all crushing multiplies.
     {
-      // Layer 1: Large, slow-rising void bubbles — the primary
-      // visible orbs that define the Abyss atmosphere.
-      {
-        vec3 voro = voronoiBubbles(vUv, uTime, 12.0);
-        float dist = voro.x;
-        float dist2 = voro.y;
-        float bHash = voro.z;
+      // Large ash — the visible drifting motes
+      vec2 ashUv = vUv;
+      ashUv += q * 0.15;              // 1. The Swirl: fluid domain warping
+      ashUv.y -= uTime * 0.05;        // 2. Anti-Gravity: rises ~5% viewport/sec
 
-        float radius = 0.012 + bHash * 0.008;
-        float bubble = exp(-pow(dist / radius, 2.0));
-        float edgeGlow = smoothstep(0.015, 0.003, dist2 - dist) * 0.08;
+      float ashRaw = snoise(vec3(ashUv * 8.0, uTime * 0.05));
+      float ashN = ashRaw * 0.5 + 0.5;               // remap [-1,1] → [0,1]
+      float ash = smoothstep(0.96, 0.98, ashN);       // 3. top ~2% only
 
-        // Brightness: scales with descent, but since this is AFTER
-        // darkening, these specks glow against the black void.
-        float bubbleBrightness = (bubble * 0.35 + edgeGlow) * d;
+      // Fine dust — lighter, faster, more numerous
+      vec2 dustUv = vUv;
+      dustUv += q * 0.10;             // weaker fluid coupling
+      dustUv.y -= uTime * 0.08;       // faster rise — lighter particles
 
-        vec3 bubbleColor = mix(vec3(0.35, 0.38, 0.44), vec3(0.55, 0.58, 0.64), bubble);
-        col += bubbleColor * bubbleBrightness;
-      }
+      float dustRaw = snoise(vec3(dustUv * 12.0, uTime * 0.08));
+      float dustN = dustRaw * 0.5 + 0.5;
+      float dust = smoothstep(0.94, 0.97, dustN);     // top ~3-6%
 
-      // Layer 2: Smaller, faster, more numerous ash specks.
-      {
-        vec3 voro = voronoiBubbles(vUv + vec2(0.37, 0.71), uTime * 1.3, 25.0);
-        float dist = voro.x;
-        float bHash = voro.z;
-
-        float radius = 0.006 + bHash * 0.004;
-        float bubble = exp(-pow(dist / radius, 2.0));
-
-        float bubbleBrightness = bubble * 0.20 * d;
-
-        vec3 bubbleColor = vec3(0.40, 0.43, 0.49);
-        col += bubbleColor * bubbleBrightness;
-      }
-
-      // Layer 3: Very fine, distant void dust.
-      {
-        vec3 voro = voronoiBubbles(vUv + vec2(0.83, 0.19), uTime * 0.7, 50.0);
-        float dist = voro.x;
-        float bHash = voro.z;
-
-        float radius = 0.003 + bHash * 0.002;
-        float bubble = exp(-pow(dist / radius, 2.0));
-
-        float bubbleBrightness = bubble * 0.10 * d;
-
-        vec3 bubbleColor = vec3(0.38, 0.40, 0.45);
-        col += bubbleColor * bubbleBrightness;
-      }
+      // 4. The Blend — pure white, additive, post-darkening
+      float ashGlow = ash * 0.7 + dust * 0.3;
+      col += vec3(1.0) * ashGlow * 0.55 * d;
     }
 
     col = max(col, vec3(0.0));
