@@ -1,11 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useLenis } from "@/providers/SmoothScrollProvider";
-import { useTheme } from "@/providers/ThemeProvider";
 import NavMenuOverlay from "@/components/NavMenuOverlay";
 import MercuryMenuToggle from "@/components/MercuryMenuToggle";
 
@@ -13,21 +12,19 @@ gsap.registerPlugin(ScrollTrigger);
 
 // ─────────────────────────────────────────────────────────────
 // Navbar — Logo + orbit menu trigger (dot + ring).
-// Click: full-screen NavMenuOverlay (z-55). Lenis paused while open.
+// Click the V crest: void pulse shockwave effect.
 // ─────────────────────────────────────────────────────────────
 
 export default function Navbar() {
   const lenis = useLenis();
-  const { theme, toggleTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const navRef = useRef<HTMLElement>(null);
-  // Wraps crest button + wordmark link. Entrance mask wipe reveals the
-  // whole cluster together, same as the old single-Link implementation.
   const logoRef = useRef<HTMLDivElement>(null);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
   const ruleRef = useRef<HTMLDivElement>(null);
   const menuOpenRef = useRef(menuOpen);
+  const crestRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     menuOpenRef.current = menuOpen;
@@ -38,6 +35,18 @@ export default function Navbar() {
     if (menuOpen) lenis.stop();
     else lenis.start();
   }, [lenis, menuOpen]);
+
+  // Void pulse — click the crest to trigger a shockwave
+  const triggerVoidPulse = useCallback(() => {
+    const crest = crestRef.current;
+    if (!crest) return;
+
+    // Add the pulse class, remove after animation
+    crest.classList.add("void-pulse-active");
+    setTimeout(() => {
+      crest.classList.remove("void-pulse-active");
+    }, 900);
+  }, []);
 
   useEffect(() => {
     const nav = navRef.current;
@@ -123,30 +132,21 @@ export default function Navbar() {
         style={{ willChange: "transform" }}
       >
         <div className="mx-auto flex h-[var(--header-height)] w-full max-w-[90rem] items-center justify-between">
-          {/* Crest + wordmark — split into sibling button + link so the
-              crest can be its own interactive target (theme flip) without
-              nesting a button inside an anchor (invalid HTML). The wrapping
-              div holds the logoRef the entrance wipe targets. */}
           <div
             ref={logoRef}
             className="relative inline-flex min-w-0 shrink-0 items-center gap-3 opacity-0 sm:gap-3.5"
           >
-            {/* Engraved monogram crest — doubles as the theme toggle.
-                Label swaps Daybreak/Nightfall based on current theme so
-                the cursor tooltip telegraphs what the click will do. */}
+            {/* V crest — void pulse on click */}
             <button
+              ref={crestRef}
               type="button"
-              onClick={(e) => toggleTheme(e.currentTarget)}
+              onClick={triggerVoidPulse}
               data-cursor-magnetic
-              data-cursor-label={theme === "void" ? "Daybreak" : "Nightfall"}
-              aria-label={
-                theme === "void"
-                  ? "Switch to daybreak theme"
-                  : "Switch to void theme"
-              }
+              data-cursor-label="Pulse"
+              aria-label="Trigger void pulse"
               className="group/crest relative block h-9 w-9 shrink-0 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-v-accent/50 sm:h-10 sm:w-10"
             >
-              {/* Hex frame — hairline, brightens to gold on hover */}
+              {/* Hex frame */}
               <svg
                 viewBox="0 0 40 40"
                 className="absolute inset-0 h-full w-full overflow-visible"
@@ -159,7 +159,6 @@ export default function Navbar() {
                   strokeWidth="1"
                   className="text-v-smoke/45 transition-[color,filter] duration-500 group-hover/crest:text-v-accent group-hover/crest:[filter:drop-shadow(0_0_6px_var(--accent-glow-strong))]"
                 />
-                {/* Inner decorative hex — thinner, emerges on hover */}
                 <polygon
                   points="20,7 31,13.5 31,26.5 20,33 9,26.5 9,13.5"
                   stroke="currentColor"
@@ -167,13 +166,14 @@ export default function Navbar() {
                   className="text-v-smoke/0 transition-[color] duration-500 group-hover/crest:text-v-accent/40"
                 />
               </svg>
-              {/* Serif V — silver base; gold overlay ink-fills upward on hover via clip-path */}
+              {/* Serif V — silver base */}
               <span
                 aria-hidden
-                className="absolute inset-0 flex items-center justify-center pb-[1px] font-[family-name:var(--font-playfair)] text-[1.35rem] leading-none tracking-[-0.02em] text-v-silver/85 sm:text-[1.5rem]"
+                className="v-emblem-glow absolute inset-0 flex items-center justify-center pb-[1px] font-[family-name:var(--font-playfair)] text-[1.35rem] leading-none tracking-[-0.02em] text-v-silver/85 transition-[color,text-shadow] duration-300 group-hover/crest:text-v-white sm:text-[1.5rem]"
               >
                 V
               </span>
+              {/* Gold overlay V */}
               <span
                 aria-hidden
                 className="absolute inset-0 flex items-center justify-center pb-[1px] font-[family-name:var(--font-playfair)] text-[1.35rem] leading-none tracking-[-0.02em] text-v-accent transition-[clip-path] duration-[900ms] ease-[cubic-bezier(0.22,1,0.36,1)] [clip-path:inset(100%_0_0_0)] group-hover/crest:[clip-path:inset(0%_0_0_0)] sm:text-[1.5rem]"
@@ -185,9 +185,7 @@ export default function Navbar() {
               </span>
             </button>
 
-            {/* Wordmark — Home link. Own hover group (/logo) so the crest
-                button's hover doesn't accidentally trigger wordmark hovers.
-                Hierarchy: L1 Volari (serif chalk), L2 Studio row (mono eyebrow). */}
+            {/* Wordmark */}
             <Link
               href="/"
               data-cursor-magnetic
@@ -205,42 +203,13 @@ export default function Navbar() {
                   aria-hidden
                   className="h-[3px] w-[3px] rounded-full bg-v-smoke/50 transition-[background-color] duration-500 group-hover/logo:bg-v-accent"
                 />
-                {/* N°01 ↔ N°02 — both labels occupy the same slot via absolute
-                    positioning on the secondary. Visibility toggled by opacity
-                    so the body.theme-flipping global transition gives the
-                    label a smooth 1.4s crossfade synced with the rest of the
-                    theme flip. Outside the flip window the swap is instant,
-                    which is fine — nothing else is changing then.
-                    N°02 uses warm gold since day is the "substance" phase. */}
-                <span className="relative inline-block font-[family-name:var(--font-geist-mono)] text-[8px] uppercase leading-none tracking-[0.35em] sm:text-[9px]">
-                  <span
-                    aria-hidden={theme !== "void"}
-                    className={`block text-v-silver/55 transition-[color] duration-500 group-hover/logo:text-v-silver/90 ${
-                      theme === "void" ? "opacity-100" : "opacity-0"
-                    }`}
-                  >
-                    N°01
-                  </span>
-                  <span
-                    aria-hidden={theme !== "day"}
-                    className={`absolute top-0 left-0 block text-v-accent/75 transition-[color] duration-500 group-hover/logo:text-v-accent ${
-                      theme === "day" ? "opacity-100" : "opacity-0"
-                    }`}
-                  >
-                    N°02
-                  </span>
+                <span className="font-[family-name:var(--font-geist-mono)] text-[8px] uppercase leading-none tracking-[0.35em] text-v-silver/55 sm:text-[9px]">
+                  N°01
                 </span>
               </span>
             </Link>
           </div>
 
-          {/* Mercury menu toggle — silver/chrome liquid-fill chip.
-              Replaces the gold decanter. Cool palette only (no warm
-              tones), hairline border, mercury bath rises from below
-              on hover with breathing meniscus + sub-pixel grain.
-              Hamburger ↔ ✕ morph keyed off menuOpen. The trigger only
-              opens; close happens from inside <NavMenuOverlay /> while
-              the navbar is hidden behind it. */}
           <MercuryMenuToggle
             ref={menuTriggerRef}
             isOpen={menuOpen}

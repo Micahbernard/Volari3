@@ -4,11 +4,6 @@ import { useRef, useMemo, useEffect, useCallback, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { vertexShader, fragmentShader } from "@/shaders/fluidBackground";
-import {
-  registerShaderFlip,
-  type Theme,
-  FLIP_DURATION_MS,
-} from "@/providers/ThemeProvider";
 import { getDescentProgress } from "@/lib/descentStore";
 
 // ─────────────────────────────────────────────────────────────
@@ -61,12 +56,9 @@ function stampTransitionOriginFromCss(target: THREE.Vector2) {
   target.set(ox / w, 1.0 - oy / h);
 }
 
-/** Read the theme attribute set by the pre-hydration script (layout.tsx). */
+/** Always void — no theme switching. */
 function readInitialFlip(): number {
-  if (typeof document === "undefined") return 0;
-  return document.documentElement.getAttribute("data-theme") === "day"
-    ? 1
-    : 0;
+  return 0;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -95,15 +87,8 @@ function FluidPlane() {
   const shaderTime = useRef(0);
   // Next slot in the ripple ring buffer — overwrites oldest click.
   const rippleSlot = useRef(0);
-  // Theme flip target (0 = void, 1 = day). uFlip lerps toward this
-  // each frame. Initialized from the DOM so SSR + pre-hydration script
-  // agree with the first shader frame.
+  // Always void. No theme transitions.
   const flipTarget = useRef<number>(readInitialFlip());
-  /** Bell-shaped warp over FLIP_DURATION_MS (View Transitions snap uFlip; this stays time-based). */
-  const transitionWarp = useRef<{ startMs: number | null; dir: number }>({
-    startMs: null,
-    dir: 1,
-  });
   const prefersReducedMotion = useRef(false);
 
   // Shader uniforms — created once, mutated per-frame
@@ -207,34 +192,6 @@ function FluidPlane() {
   // uFlip toward it, so the shader crossfade is frame-locked to the
   // CSS transition window.
   //
-  // `instant` is set by the View Transitions path: the browser snapshots
-  // <html> at the end of the update callback, and that snapshot freezes
-  // whatever uFlip is at that instant. If we only update flipTarget, the
-  // snapshot captures uFlip ≈ old-value (lerp hasn't run yet) and the
-  // horizon-rise reveal exposes a frozen pre-flip shader. Snapping uFlip
-  // to the target directly makes the snapshot honest.
-  useEffect(() => {
-    const unregister = registerShaderFlip(
-      (target: Theme, instant?: boolean) => {
-        const targetValue = target === "day" ? 1 : 0;
-        flipTarget.current = targetValue;
-        transitionWarp.current = {
-          startMs: performance.now(),
-          dir: target === "day" ? 1 : -1,
-        };
-        if (materialRef.current) {
-          stampTransitionOriginFromCss(
-            materialRef.current.uniforms.uTransitionOrigin.value as THREE.Vector2
-          );
-        }
-        if (instant && materialRef.current) {
-          materialRef.current.uniforms.uFlip.value = targetValue;
-        }
-      }
-    );
-    return unregister;
-  }, []);
-
   // ── Per-frame uniform updates ──
   useFrame(({ clock }) => {
     const mat = materialRef.current;
@@ -272,19 +229,9 @@ function FluidPlane() {
         ? flipTarget.current
         : flipNext;
 
-    let warp = 0;
-    const tw = transitionWarp.current;
-    if (tw.startMs !== null && !prefersReducedMotion.current) {
-      const elapsed = performance.now() - tw.startMs;
-      if (elapsed >= FLIP_DURATION_MS) {
-        tw.startMs = null;
-      } else {
-        const u = elapsed / FLIP_DURATION_MS;
-        warp = Math.sin(u * Math.PI);
-      }
-    }
-    mat.uniforms.uTransitionWarp.value = warp;
-    mat.uniforms.uTransitionDir.value = tw.startMs !== null ? tw.dir : 1;
+    // Always void — no theme transitions
+    mat.uniforms.uTransitionWarp.value = 0;
+    mat.uniforms.uTransitionDir.value = 1;
 
     // Retire expired ripples so the shader loop skips them cheaply.
     const ripples = mat.uniforms.uRipples.value as THREE.Vector4[];

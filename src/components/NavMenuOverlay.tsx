@@ -4,8 +4,19 @@ import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 
 // ─────────────────────────────────────────────────────────────
-// Full-viewport navigation overlay — “reveal the frame”
-// Staggered links, horizontal rules, charcoal glass backdrop.
+// Full-viewport navigation overlay — "enter the void"
+//
+// Ghost-text item reveal: numbers emerge first, then labels
+// clip in from blur + darkness. The world behind recedes into
+// a heavy radial vignette — like HK's pause screen.
+//
+// Animation choreography:
+//   0.0s  Backdrop radial vignette fades in
+//   0.1s  Top rule draws
+//   0.2s  Numbers (01-04) fade in, slight blur
+//   0.35s Labels emerge from blur + clip-path, staggered
+//   0.5s  Bottom rule draws
+//   0.6s  Footer fades in
 // ─────────────────────────────────────────────────────────────
 
 const NAV_MENU_LINKS = [
@@ -25,8 +36,12 @@ export default function NavMenuOverlay({ onClose }: NavMenuOverlayProps) {
   const ruleTopRef = useRef<HTMLDivElement>(null);
   const ruleBottomRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
-  const linkRefs = useRef<(HTMLAnchorElement | null)[]>([]);
+  const numRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const labelRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const inquireNumRef = useRef<HTMLSpanElement>(null);
+  const inquireLabelRef = useRef<HTMLSpanElement>(null);
   const footerRef = useRef<HTMLDivElement>(null);
+  const linkContainerRefs = useRef<(HTMLAnchorElement | null)[]>([]);
 
   useEffect(() => {
     const closeBtn = closeRef.current;
@@ -43,50 +58,126 @@ export default function NavMenuOverlay({ onClose }: NavMenuOverlayProps) {
     const backdrop = backdropRef.current;
     const ruleT = ruleTopRef.current;
     const ruleB = ruleBottomRef.current;
-    const links = linkRefs.current.filter(Boolean);
+    const nums = numRefs.current.filter(Boolean);
+    const labels = labelRefs.current.filter(Boolean);
+    const inquireNum = inquireNumRef.current;
+    const inquireLabel = inquireLabelRef.current;
     const footer = footerRef.current;
+    const containers = linkContainerRefs.current.filter(Boolean);
 
     const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
 
+    // Phase 1: Backdrop — radial vignette fades in
+    // The world recedes into a pitch-black center with desaturated edges
     if (backdrop) {
-      tl.fromTo(backdrop, { opacity: 0 }, { opacity: 1, duration: 0.45 }, 0);
+      tl.fromTo(
+        backdrop,
+        { opacity: 0 },
+        { opacity: 1, duration: 0.6, ease: "power2.out" },
+        0
+      );
     }
+
+    // Phase 2: Top ornamental rule draws
     if (ruleT) {
       tl.fromTo(
         ruleT,
         { scaleX: 0, transformOrigin: "center center" },
-        { scaleX: 1, duration: 0.95, ease: "expo.out" },
-        0.08
+        { scaleX: 1, duration: 1.0, ease: "expo.out" },
+        0.1
       );
     }
-    if (links.length) {
+
+    // Phase 3: Numbers emerge from blur + darkness
+    // Each number fades in with a slight blur that clears
+    if (nums.length) {
       tl.fromTo(
-        links,
-        { y: 40, opacity: 0 },
+        nums,
         {
-          y: 0,
+          opacity: 0,
+          y: 10,
+          filter: "blur(4px)",
+        },
+        {
           opacity: 1,
-          duration: 0.55,
-          stagger: 0.065,
+          y: 0,
+          filter: "blur(0px)",
+          duration: 0.5,
+          stagger: 0.08,
+          ease: "power2.out",
+        },
+        0.2
+      );
+    }
+
+    // Phase 4: Labels — ghost text reveal
+    // Each label emerges from heavy blur and darkness via clip-path
+    // Like whispers materializing from the void
+    if (labels.length) {
+      tl.fromTo(
+        labels,
+        {
+          opacity: 0,
+          y: 24,
+          filter: "blur(10px)",
+          clipPath: "inset(0 100% 0 0)",
+        },
+        {
+          opacity: 1,
+          y: 0,
+          filter: "blur(0px)",
+          clipPath: "inset(0 0% 0 0)",
+          duration: 0.75,
+          stagger: 0.1,
           ease: "power3.out",
         },
-        0.12
-      );
-    }
-    if (footer) {
-      tl.fromTo(
-        footer,
-        { opacity: 0, y: 12 },
-        { opacity: 1, y: 0, duration: 0.5 },
         0.35
       );
     }
+
+    // Phase 4b: Inquire row ghost reveal
+    if (inquireNum && inquireLabel) {
+      tl.fromTo(
+        inquireNum,
+        { opacity: 0, y: 10, filter: "blur(4px)" },
+        { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.5, ease: "power2.out" },
+        0.55
+      );
+      tl.fromTo(
+        inquireLabel,
+        { opacity: 0, y: 24, filter: "blur(10px)", clipPath: "inset(0 100% 0 0)" },
+        { opacity: 1, y: 0, filter: "blur(0px)", clipPath: "inset(0 0% 0 0)", duration: 0.75, ease: "power3.out" },
+        0.65
+      );
+    }
+
+    // Phase 5: Link container borders fade in
+    if (containers.length) {
+      tl.fromTo(
+        containers,
+        { opacity: 0 },
+        { opacity: 1, duration: 0.4, stagger: 0.06 },
+        0.3
+      );
+    }
+
+    // Phase 6: Footer
+    if (footer) {
+      tl.fromTo(
+        footer,
+        { opacity: 0, y: 12, filter: "blur(2px)" },
+        { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.6 },
+        0.7
+      );
+    }
+
+    // Phase 7: Bottom rule
     if (ruleB) {
       tl.fromTo(
         ruleB,
         { scaleX: 0, transformOrigin: "center center" },
-        { scaleX: 1, duration: 0.85, ease: "expo.out" },
-        0.25
+        { scaleX: 1, duration: 0.9, ease: "expo.out" },
+        0.6
       );
     }
 
@@ -95,8 +186,14 @@ export default function NavMenuOverlay({ onClose }: NavMenuOverlayProps) {
     };
   }, []);
 
-  const setLinkRef = (i: number) => (el: HTMLAnchorElement | null) => {
-    linkRefs.current[i] = el;
+  const setNumRef = (i: number) => (el: HTMLSpanElement | null) => {
+    numRefs.current[i] = el;
+  };
+  const setLabelRef = (i: number) => (el: HTMLSpanElement | null) => {
+    labelRefs.current[i] = el;
+  };
+  const setContainerRef = (i: number) => (el: HTMLAnchorElement | null) => {
+    linkContainerRefs.current[i] = el;
   };
 
   return (
@@ -109,9 +206,16 @@ export default function NavMenuOverlay({ onClose }: NavMenuOverlayProps) {
       className="fixed inset-0 z-[55] flex flex-col"
       data-lenis-prevent
     >
+      {/* Backdrop: heavy radial vignette — pitch black center, the world recedes */}
       <div
         ref={backdropRef}
-        className="absolute inset-0 bg-v-black/86 backdrop-blur-md opacity-0"
+        className="absolute inset-0 opacity-0"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, rgba(2,2,3,0.94) 0%, rgba(4,4,6,0.88) 35%, rgba(6,6,10,0.78) 60%, rgba(8,8,14,0.60) 100%)",
+          backdropFilter: "blur(6px) saturate(0.5)",
+          WebkitBackdropFilter: "blur(6px) saturate(0.5)",
+        }}
         aria-hidden
       />
 
@@ -122,7 +226,7 @@ export default function NavMenuOverlay({ onClose }: NavMenuOverlayProps) {
             type="button"
             data-close
             onClick={onClose}
-            className="group flex items-center gap-3 font-[family-name:var(--font-geist-mono)] text-[10px] uppercase tracking-[0.35em] text-v-silver transition-colors hover:text-v-chalk focus-visible:text-v-chalk focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-v-accent/60"
+            className="group pale-glow flex items-center gap-3 font-[family-name:var(--font-geist-mono)] text-[10px] uppercase tracking-[0.35em] text-v-silver transition-colors hover:text-v-chalk focus-visible:text-v-chalk focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-v-accent/60"
           >
             <span className="h-px w-8 bg-v-smoke transition-colors group-hover:bg-v-chalk" />
             Close
@@ -148,17 +252,25 @@ export default function NavMenuOverlay({ onClose }: NavMenuOverlayProps) {
             {NAV_MENU_LINKS.map((item, i) => (
               <li key={item.href}>
                 <a
-                  ref={setLinkRef(i)}
+                  ref={setContainerRef(i)}
                   href={item.href}
                   onClick={onClose}
                   data-cursor-magnetic
                   data-cursor-label={item.cursorLabel}
                   className="group flex items-baseline gap-6 border-b border-v-smoke/15 py-4 opacity-0 transition-colors hover:border-v-accent/30 md:gap-10 md:py-5"
                 >
-                  <span className="font-[family-name:var(--font-geist-mono)] text-[10px] tabular-nums tracking-[0.25em] text-v-smoke/70">
+                  {/* Number — ghost emerges first, brighter against void backdrop */}
+                  <span
+                    ref={setNumRef(i)}
+                    className="font-[family-name:var(--font-geist-mono)] text-[10px] tabular-nums tracking-[0.25em] text-v-bone/50"
+                  >
                     {item.n}
                   </span>
-                  <span className="font-[family-name:var(--font-playfair)] text-[clamp(1.75rem,6vw,3rem)] font-normal tracking-[-0.03em] text-v-chalk transition-colors group-hover:text-v-white">
+                  {/* Label — heavy blur clears, clip-path reveals */}
+                  <span
+                    ref={setLabelRef(i)}
+                    className="pale-glow-strong font-[family-name:var(--font-playfair)] text-[clamp(1.75rem,6vw,3rem)] font-normal tracking-[-0.03em] text-v-chalk transition-colors group-hover:text-v-white"
+                  >
                     {item.label}
                   </span>
                 </a>
@@ -166,17 +278,23 @@ export default function NavMenuOverlay({ onClose }: NavMenuOverlayProps) {
             ))}
             <li>
               <a
-                ref={setLinkRef(NAV_MENU_LINKS.length)}
+                ref={setContainerRef(NAV_MENU_LINKS.length)}
                 href="#contact"
                 onClick={onClose}
                 data-cursor-magnetic
                 data-cursor-label="Let's talk"
                 className="group flex items-baseline gap-6 border-b border-v-accent/25 py-4 opacity-0 transition-colors hover:border-v-accent md:gap-10 md:py-5"
               >
-                <span className="font-[family-name:var(--font-geist-mono)] text-[10px] tabular-nums tracking-[0.25em] text-v-accent/80">
+                <span
+                  ref={inquireNumRef}
+                  className="font-[family-name:var(--font-geist-mono)] text-[10px] tabular-nums tracking-[0.25em] text-v-bone/50"
+                >
                   —
                 </span>
-                <span className="font-[family-name:var(--font-playfair)] text-[clamp(1.75rem,6vw,3rem)] font-normal italic tracking-[-0.03em] text-v-accent transition-colors group-hover:text-v-chalk">
+                <span
+                  ref={inquireLabelRef}
+                  className="font-[family-name:var(--font-playfair)] text-[clamp(1.75rem,6vw,3rem)] font-normal italic tracking-[-0.03em] text-v-accent transition-colors pale-glow-strong group-hover:text-v-chalk"
+                >
                   Inquire
                 </span>
               </a>
@@ -193,7 +311,7 @@ export default function NavMenuOverlay({ onClose }: NavMenuOverlayProps) {
           </span>
           <a
             href="mailto:hello@volari.studio"
-            className="font-[family-name:var(--font-geist-mono)] text-[10px] tracking-[0.12em] text-v-silver transition-colors hover:text-v-chalk"
+            className="pale-glow font-[family-name:var(--font-geist-mono)] text-[10px] tracking-[0.12em] text-v-silver transition-colors hover:text-v-chalk"
           >
             hello@volari.studio
           </a>

@@ -4,6 +4,7 @@ import { useEffect, useRef, useMemo } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import TheDescent from "@/components/TheDescent";
+import HKCornerMarks from "@/components/HKCornerMarks";
 
 
 gsap.registerPlugin(ScrollTrigger);
@@ -363,17 +364,12 @@ export default function Home() {
         className="relative flex min-h-screen scroll-mt-20 flex-col items-center justify-center overflow-hidden"
       >
         <div data-hero-content className="relative w-full">
-          {/* Corner marks */}
-          <div className="pointer-events-none absolute inset-6 md:inset-12">
-            <div ref={setCornerRef(0)} className="absolute top-0 left-0 h-6 w-6 border-t border-l border-v-smoke/40 opacity-0" />
-            <div ref={setCornerRef(1)} className="absolute top-0 right-0 h-6 w-6 border-t border-r border-v-smoke/40 opacity-0" />
-            <div ref={setCornerRef(2)} className="absolute bottom-0 left-0 h-6 w-6 border-b border-l border-v-smoke/40 opacity-0" />
-            <div ref={setCornerRef(3)} className="absolute bottom-0 right-0 h-6 w-6 border-b border-r border-v-smoke/40 opacity-0" />
-          </div>
+          {/* Corner marks — small machined ornamental brackets */}
+          <HKCornerMarks />
 
           {/* Top rule */}
           <div className="flex items-center justify-center px-6 md:px-12">
-            <div ref={(el) => { rulesRef.current.top = el; }} className="h-px w-full max-w-6xl bg-gradient-to-r from-transparent via-v-smoke/40 to-transparent" style={{ transform: "scaleX(0)" }} />
+            <div ref={(el) => { rulesRef.current.top = el; }} className="h-px w-full max-w-6xl bg-gradient-to-r from-transparent via-v-smoke/50 to-transparent" style={{ transform: "scaleX(0)" }} />
           </div>
 
           {/* Main title */}
@@ -392,7 +388,7 @@ export default function Home() {
             <p ref={taglineRef} className="mt-6 flex flex-wrap items-center justify-center gap-x-[0.45em] gap-y-1 overflow-hidden px-4 md:mt-8">
               {taglineWords.map((word, i) => (
                 <span key={i} className="inline-block overflow-hidden">
-                  <span ref={setTaglineWordRef(i)} className="inline-block font-[family-name:var(--font-geist-mono)] text-[10px] uppercase tracking-[0.35em] text-v-silver opacity-0 md:text-xs" style={{ willChange: "transform, opacity" }}>
+                  <span ref={setTaglineWordRef(i)} className="inline-block font-[family-name:var(--font-geist-mono)] text-[10px] uppercase tracking-[0.35em] text-v-bone/70 opacity-0 md:text-xs" style={{ willChange: "transform, opacity" }}>
                     {word}
                   </span>
                 </span>
@@ -403,16 +399,16 @@ export default function Home() {
           {/* Studio metadata */}
           <div id="studio" className="mx-auto mt-10 flex w-full max-w-6xl scroll-mt-20 flex-col items-center justify-between gap-3 px-6 sm:flex-row sm:items-center md:mt-12 md:px-12">
             <div ref={metaLeftRef} className="opacity-0">
-              <span className="font-[family-name:var(--font-geist-mono)] text-[9px] uppercase tracking-[0.5em] text-v-smoke">Est. 2024</span>
+              <span className="font-[family-name:var(--font-geist-mono)] text-[9px] uppercase tracking-[0.5em] text-v-silver/60">Est. 2024</span>
             </div>
             <div ref={metaRightRef} className="opacity-0">
-              <span className="font-[family-name:var(--font-geist-mono)] text-[9px] uppercase tracking-[0.5em] text-v-smoke">Creative Studio</span>
+              <span className="font-[family-name:var(--font-geist-mono)] text-[9px] uppercase tracking-[0.5em] text-v-silver/60">Creative Studio</span>
             </div>
           </div>
 
           {/* Bottom rule */}
           <div className="flex items-center justify-center px-6 md:px-12">
-            <div ref={(el) => { rulesRef.current.bottom = el; }} className="h-px w-full max-w-6xl bg-gradient-to-r from-transparent via-v-smoke/40 to-transparent" style={{ transform: "scaleX(0)" }} />
+            <div ref={(el) => { rulesRef.current.bottom = el; }} className="h-px w-full max-w-6xl bg-gradient-to-r from-transparent via-v-smoke/50 to-transparent" style={{ transform: "scaleX(0)" }} />
           </div>
         </div>
       </section>

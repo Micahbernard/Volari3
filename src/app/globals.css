@@ -14,20 +14,26 @@
   font-display: swap;
 }
 
-/* ── Theme Tokens ── */
+/* ── Theme Tokens ──
+   HOLLOW KNIGHT ABYSS EDITION
+   Absolute black. Cold grey. Ghostly pale accents.
+   No warmth. No gold. The Void is unforgiving.
+── */
 :root {
-  /* Base palette — swapped wholesale by [data-theme="day"] below */
-  --v-black: #050505;
-  --v-void: #0a0a0a;
-  --v-charcoal: #111111;
-  --v-ash: #1a1a1a;
-  --v-smoke: #2a2a2a;
-  --v-silver: #8a8a8a;
-  --v-bone: #c5c5c5;
-  --v-chalk: #e8e8e8;
-  --v-white: #f0f0f0;
-  --v-accent: #d4a853;
-  --v-accent-dim: #a07d3a;
+  /* Base palette — abyss depth hierarchy */
+  --v-black: #020203;          /* Deeper than absolute — the Abyss floor */
+  --v-void: #050508;           /* Void space — where shade lurks */
+  --v-charcoal: #0a0a10;       /* Ancient stone, worn by time */
+  --v-ash: #12121a;            /* Ash of dead civilizations */
+  --v-smoke: #1e1e2e;          /* Fog in the depths */
+  --v-silver: #6a7080;         /* Cold metal of forgotten machines */
+  --v-bone: #a0a8b8;           /* Pale as the Knight's shell */
+  --v-chalk: #d0d8e8;          /* Ghost light — the only brightness */
+  --v-white: #e8eef8;          /* The mask's gleam */
+
+  /* Accent — ghostly pale, not warm gold. Like the Knight's eyes. */
+  --v-accent: #8a9ab0;         /* Pale blue-grey: Hollow Knight seal-light */
+  --v-accent-dim: #5a6a80;     /* Dimmer seal mark */
 
   /* Functional */
   --background: var(--v-black);
@@ -36,69 +42,74 @@
 
   /* ── Specialized tokens ── */
 
-  /* Hero "VOLARI" — 9-stop steel gradient (void) / warm brass (day) */
-  --hero-metal-0: #060708;
-  --hero-metal-1: #12161d;
-  --hero-metal-2: #283038;
-  --hero-metal-3: #4f5c6a;
-  --hero-metal-4: #8b9bab;
-  --hero-metal-5: #cfd8e2;
-  --hero-metal-6: #8e9dad;
-  --hero-metal-7: #3d4752;
-  --hero-metal-8: #0c0e12;
+  /* Hero "VOLARI" — 9-stop abyssal gradient (void) / pale stone (day) */
+  --hero-metal-0: #030305;
+  --hero-metal-1: #080a10;
+  --hero-metal-2: #111520;
+  --hero-metal-3: #202838;
+  --hero-metal-4: #3a4558;
+  --hero-metal-5: #5a6880;
+  --hero-metal-6: #3a4558;
+  --hero-metal-7: #181c28;
+  --hero-metal-8: #040508;
 
-  /* Hero bokeh — two radial blobs behind the letterform */
-  --hero-bokeh-warm: rgba(255, 255, 255, 0.26);
-  --hero-bokeh-cool: rgba(185, 200, 215, 0.10);
-  --hero-bokeh-pale: rgba(220, 232, 242, 0.16);
-  --hero-bokeh-deep: rgba(100, 118, 138, 0.05);
+  /* Hero bokeh — cold fog behind the letterform */
+  --hero-bokeh-warm: rgba(180, 195, 220, 0.14);
+  --hero-bokeh-cool: rgba(120, 140, 170, 0.06);
+  --hero-bokeh-pale: rgba(200, 215, 235, 0.10);
+  --hero-bokeh-deep: rgba(60, 80, 110, 0.04);
 
-  /* Hero specular — cursor-steered light blade traveling across the metal */
-  --hero-specular-ghost:  rgba(255, 255, 255, 0.35);
-  --hero-specular-bright: rgba(255, 255, 255, 1.00);
-  --hero-specular-blue:   rgba(248, 252, 255, 0.95);
-  --hero-specular-dim:    rgba(190, 205, 218, 0.45);
+  /* Hero specular — cursor-steered pale light in the void */
+  --hero-specular-ghost:  rgba(180, 200, 225, 0.30);
+  --hero-specular-bright: rgba(220, 235, 255, 0.90);
+  --hero-specular-blue:   rgba(200, 220, 245, 0.70);
+  --hero-specular-dim:    rgba(140, 165, 195, 0.35);
 
-  /* Hero halo — ambient glow behind the heading */
-  --hero-halo-inner: rgba(0, 0, 0, 0.55);
-  --hero-halo-outer: rgba(0, 0, 0, 0.30);
+  /* Hero halo — void shadow behind the heading */
+  --hero-halo-inner: rgba(2, 2, 5, 0.70);
+  --hero-halo-outer: rgba(2, 2, 5, 0.40);
 
-  /* Comet-veil cursor — 3 silver wisps on dark; warm umber dust on cream */
-  --cursor-veil-core:   rgba(232, 232, 232, 1);
-  --cursor-veil-mid:    rgba(207, 216, 226, 1);
-  --cursor-veil-edge:   rgba(180, 192, 206, 0);
+  /* Comet-veil cursor — 3 pale wisps in the dark */
+  --cursor-veil-core:   rgba(200, 210, 225, 1);
+  --cursor-veil-mid:    rgba(170, 185, 205, 1);
+  --cursor-veil-edge:   rgba(130, 150, 175, 0);
   --cursor-veil-blend:  screen;
-  --cursor-ring-line:   rgba(232, 232, 232, 0.65);
-  --cursor-ring-shadow: rgba(207, 216, 226, 0.22);
+  --cursor-ring-line:   rgba(200, 210, 225, 0.55);
+  --cursor-ring-shadow: rgba(140, 165, 195, 0.18);
 
-  /* Accent glow — gold at 35% / 18% alpha */
-  --accent-glow-strong: rgba(212, 168, 83, 0.35);
-  --accent-glow-soft:   rgba(212, 168, 83, 0.18);
+  /* Accent glow — ghostly pale at 30% / 14% alpha */
+  --accent-glow-strong: rgba(138, 154, 176, 0.30);
+  --accent-glow-soft:   rgba(138, 154, 176, 0.14);
 
-  /* Decanter — deep-gold floor of the liquid fill */
-  --decanter-bottom: #b88f3f;
+  /* Decanter — pale-grey floor of the liquid fill */
+  --decanter-bottom: #4a5a70;
 
   /* Navbar scrolled state */
-  --nav-scrolled-bg: rgba(5, 5, 5, 0.70);
+  --nav-scrolled-bg: rgba(2, 2, 3, 0.72);
 
   /* Chalk dot halo */
-  --chalk-dot-halo:       rgba(255, 255, 255, 0.35);
-  --chalk-dot-halo-hover: rgba(232, 232, 232, 0.55);
+  --chalk-dot-halo:       rgba(180, 200, 225, 0.30);
+  --chalk-dot-halo-hover: rgba(200, 220, 245, 0.50);
+
+  /* Pale glow — Hollow Knight selection halo */
+  --pale-glow:            rgba(195, 210, 230, 0.35);
+  --pale-glow-soft:       rgba(195, 210, 230, 0.18);
+  --pale-glow-bright:     rgba(210, 225, 245, 0.55);
 
   /* Showcase card chrome */
-  --card-hover-glow:    rgba(255, 255, 255, 0.055);
-  --card-inner-shade-a: rgba(42, 42, 42, 0.30);
-  --card-inner-shade-b: rgba(26, 26, 26, 0.40);
-  --card-inner-vignette: rgba(0, 0, 0, 0.40);
-  --card-panel-border:   rgba(255, 255, 255, 0.06);
+  --card-hover-glow:    rgba(180, 200, 225, 0.04);
+  --card-inner-shade-a: rgba(18, 18, 26, 0.35);
+  --card-inner-shade-b: rgba(10, 10, 16, 0.45);
+  --card-inner-vignette: rgba(2, 2, 5, 0.50);
+  --card-panel-border:   rgba(180, 200, 225, 0.04);
 
   /* Studio pillar bokeh */
-  --pillar-bokeh-gold:   rgba(212, 175, 55, 0.14);
-  --pillar-bokeh-silver: rgba(148, 163, 184, 0.12);
-  --pillar-bokeh-chalk:  rgba(255, 255, 255, 0.06);
+  --pillar-bokeh-gold:   rgba(138, 154, 176, 0.10);
+  --pillar-bokeh-silver: rgba(100, 120, 145, 0.10);
+  --pillar-bokeh-chalk:  rgba(200, 220, 245, 0.04);
 
-  /* Film grain */
-  --grain-opacity: 0.035;
+  /* Film grain — heavier in the abyss */
+  --grain-opacity: 0.045;
 
   /* Easing curves */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
@@ -139,106 +150,9 @@
   --sidebar-ring: var(--v-accent);
 }
 
-/* ─────────────────────────────────────────────
-   DAYBREAK — Substance palette
-   ───────────────────────────────────────────── */
-:root[data-theme="day"] {
-  /* Base palette — every --v-* inverts its semantic role */
-  --v-black: #f2ece1;
-  --v-void: #ede6d8;
-  --v-charcoal: #e0d6c4;
-  --v-ash: #cfc3ad;
-  --v-smoke: #a89d86;
-  --v-silver: #7a6f5c;
-  --v-bone: #3e3a30;
-  --v-chalk: #1a1712;
-  --v-white: #0a0806;
-  --v-accent: #e0b45c;
-  --v-accent-dim: #b08a40;
-
-  /* Hero — warm brass stops instead of cool steel */
-  --hero-metal-0: #231408;
-  --hero-metal-1: #3d2813;
-  --hero-metal-2: #5a3f1e;
-  --hero-metal-3: #8a6334;
-  --hero-metal-4: #b89359;
-  --hero-metal-5: #ead7a8;
-  --hero-metal-6: #b2854a;
-  --hero-metal-7: #6f4f26;
-  --hero-metal-8: #2a180a;
-
-  /* Hero bokeh — warm cream instead of cool silver */
-  --hero-bokeh-warm: rgba(255, 248, 224, 0.28);
-  --hero-bokeh-cool: rgba(228, 208, 176, 0.10);
-  --hero-bokeh-pale: rgba(255, 240, 216, 0.18);
-  --hero-bokeh-deep: rgba(130, 100, 60, 0.06);
-
-  /* Hero specular — warmed highlights */
-  --hero-specular-ghost:  rgba(255, 250, 235, 0.35);
-  --hero-specular-bright: rgba(255, 248, 228, 1.00);
-  --hero-specular-blue:   rgba(252, 246, 232, 0.95);
-  --hero-specular-dim:    rgba(220, 200, 160, 0.45);
-
-  /* Hero halo — subtle warm glow */
-  --hero-halo-inner: rgba(180, 140, 80, 0.25);
-  --hero-halo-outer: rgba(180, 140, 80, 0.15);
-
-  /* Comet veil — amber dust motes; multiply blend */
-  --cursor-veil-core:   rgba(80, 55, 25, 1);
-  --cursor-veil-mid:    rgba(110, 80, 40, 1);
-  --cursor-veil-edge:   rgba(140, 105, 60, 0);
-  --cursor-veil-blend:  multiply;
-  --cursor-ring-line:   rgba(80, 55, 25, 0.55);
-  --cursor-ring-shadow: rgba(180, 140, 80, 0.22);
-
-  /* Accent glow tuned to brightened day gold */
-  --accent-glow-strong: rgba(224, 180, 92, 0.40);
-  --accent-glow-soft:   rgba(224, 180, 92, 0.22);
-
-  /* Decanter — deeper gold floor reads on cream */
-  --decanter-bottom: #9c7020;
-
-  /* Navbar scrolled — translucent cream */
-  --nav-scrolled-bg: rgba(242, 236, 225, 0.72);
-
-  /* Chalk dot halo */
-  --chalk-dot-halo:       rgba(180, 140, 80, 0.35);
-  --chalk-dot-halo-hover: rgba(180, 140, 80, 0.55);
-
-  /* Showcase card chrome — warmed counterparts */
-  --card-hover-glow:    rgba(26, 23, 18, 0.08);
-  --card-inner-shade-a: rgba(168, 157, 134, 0.28);
-  --card-inner-shade-b: rgba(138, 124, 98, 0.35);
-  --card-inner-vignette: rgba(60, 40, 15, 0.28);
-  --card-panel-border:   rgba(26, 23, 18, 0.10);
-
-  /* Studio pillar bokeh */
-  --pillar-bokeh-gold:   rgba(224, 180, 92, 0.20);
-  --pillar-bokeh-silver: rgba(168, 152, 120, 0.16);
-  --pillar-bokeh-chalk:  rgba(26, 23, 18, 0.08);
-
-  /* Grain — heavier on cream */
-  --grain-opacity: 0.055;
-
-  /* shadcn/ui tokens for day mode */
-  --background: var(--v-black);
-  --foreground: var(--v-chalk);
-  --muted: var(--v-silver);
-  --card: var(--v-void);
-  --card-foreground: var(--v-chalk);
-  --popover: var(--v-void);
-  --popover-foreground: var(--v-chalk);
-  --primary: var(--v-accent);
-  --primary-foreground: var(--v-black);
-  --secondary: var(--v-ash);
-  --secondary-foreground: var(--v-chalk);
-  --muted-foreground: var(--v-silver);
-  --accent-foreground: var(--v-chalk);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: rgba(0, 0, 0, 12%);
-  --input: rgba(0, 0, 0, 15%);
-  --ring: var(--v-accent);
-}
+  /* ════════════════════════════════════════════════════════
+     DAYBREAK — REMOVED. The site is void only.
+     ════════════════════════════════════════════════════════ */
 
 /* ── Tailwind v4 Theme Extension ── */
 @theme inline {
@@ -379,6 +293,32 @@ body::after {
   text-wrap: balance;
 }
 
+/* Pale glow — Hollow Knight style luminous selection halo */
+.pale-glow {
+  transition: text-shadow 0.5s ease-out, color 0.4s ease-out;
+}
+
+.pale-glow:hover,
+.pale-glow:focus-visible {
+  text-shadow:
+    0 0 12px var(--pale-glow-soft),
+    0 0 28px var(--pale-glow),
+    0 0 48px var(--pale-glow-soft);
+}
+
+/* Stronger variant for larger text */
+.pale-glow-strong {
+  transition: text-shadow 0.5s ease-out, color 0.4s ease-out;
+}
+
+.pale-glow-strong:hover,
+.pale-glow-strong:focus-visible {
+  text-shadow:
+    0 0 16px var(--pale-glow),
+    0 0 36px var(--pale-glow-soft),
+    0 0 64px var(--pale-glow-bright);
+}
+
 .clip-inset-full {
   clip-path: inset(0 100% 0 0);
 }
@@ -428,87 +368,63 @@ body::after {
   -webkit-backdrop-filter: blur(12px);
 }
 
-/* ── Theme flip: fallback crossfade ── */
+/* ── Theme flip — void only, no flip needed ── */
 body.theme-flipping,
 body.theme-flipping *,
 body.theme-flipping *::before,
 body.theme-flipping *::after {
-  transition:
-    background-color 1.5s var(--ease-out-expo),
-    color 1.5s var(--ease-out-expo),
-    border-color 1.5s var(--ease-out-expo),
-    fill 1.5s var(--ease-out-expo),
-    stroke 1.5s var(--ease-out-expo),
-    box-shadow 1.5s var(--ease-out-expo),
-    opacity 1.5s var(--ease-out-expo),
-    filter 1.5s var(--ease-out-expo);
+  transition: none;
+}
+
+/* ── Void pulse animation ── */
+@keyframes void-pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(6);
+    opacity: 0;
+  }
+}
+
+.void-pulse-active::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid rgba(195, 210, 230, 0.5);
+  animation: void-pulse-ring 0.8s ease-out forwards;
+  pointer-events: none;
+}
+
+.void-pulse-active .v-emblem-glow {
+  animation: void-pulse-glow 0.6s ease-out forwards;
+}
+
+@keyframes void-pulse-glow {
+  0% {
+    text-shadow: 0 0 0px transparent;
+    color: var(--v-silver);
+  }
+  30% {
+    text-shadow: 0 0 20px rgba(210, 225, 245, 0.8), 0 0 40px rgba(210, 225, 245, 0.5);
+    color: var(--v-white);
+  }
+  100% {
+    text-shadow: 0 0 0px transparent;
+    color: var(--v-silver);
+  }
 }
 
 /* ═════════════════════════════════════════════════════════════════════
-   Theme flip — direction-dependent transitions
+   Void only — no theme transitions
    ═════════════════════════════════════════════════════════════════════ */
-
-/* ── Shared envelope for the RISE path only ── */
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-fill-mode: both;
-  mix-blend-mode: normal;
-}
-
-/* ── RISE — void → day — sunlight from crest ── */
-:root[data-flip-direction="rise"]::view-transition-old(root) {
-  animation:
-    crest-hold 1.5s var(--ease-out-expo) both,
-    dawn-warm-old 1.5s var(--ease-out-expo) both;
-}
-:root[data-flip-direction="rise"]::view-transition-new(root) {
-  animation: crest-sunrise 1.5s var(--ease-out-expo) both;
-}
-
-@keyframes crest-hold {
-  from,
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes crest-sunrise {
-  0% {
-    clip-path: circle(0px at var(--flip-ox) var(--flip-oy));
-    filter: brightness(1.45) saturate(1.14) contrast(1.02);
-  }
-  38% {
-    filter: brightness(1.14) saturate(1.06);
-  }
-  100% {
-    clip-path: circle(150vmax at var(--flip-ox) var(--flip-oy));
-    filter: brightness(1) saturate(1) contrast(1);
-  }
-}
-
-@keyframes dawn-warm-old {
-  0%,
-  100% {
-    filter: brightness(1) sepia(0) saturate(1);
-  }
-  38% {
-    filter: brightness(1.08) sepia(0.18) saturate(1.08);
-  }
-}
-
-:root[data-flip-direction="rise"] body.theme-flipping {
-  filter: brightness(1.03) sepia(0.07);
-}
 
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
+  .void-pulse-active::after {
     animation-duration: 0.001s !important;
-  }
-
-  :root[data-flip-direction="rise"] body.theme-flipping {
-    filter: none !important;
   }
 }
 

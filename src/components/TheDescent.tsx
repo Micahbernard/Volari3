@@ -21,9 +21,9 @@ gsap.registerPlugin(ScrollTrigger);
 // ─────────────────────────────────────────────────────────────
 
 const GHOST_LINES = [
-  { text: "Below the surface, something stirs.", at: 0.15 },
-  { text: "The deeper you go, the darker it remembers.", at: 0.4 },
-  { text: "In the void, even silence has weight.", at: 0.7 },
+  { text: "Below the surface, the void remembers.", at: 0.15 },
+  { text: "In the depths, even light fears to tread.", at: 0.4 },
+  { text: "No cost too great. No mind to think.", at: 0.7 },
 ];
 
 export default function TheDescent() {
@@ -183,13 +183,13 @@ export default function TheDescent() {
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
           >
-            <path d="M180 900 L180 120 Q160 40 140 0" stroke="rgba(55,58,68,0.5)" strokeWidth="2" />
-            <path d="M160 900 L160 180 Q145 80 120 20" stroke="rgba(55,58,68,0.35)" strokeWidth="1.5" />
-            <path d="M190 900 L190 300 Q180 260 160 240 Q140 260 130 300 L130 900" stroke="rgba(45,48,58,0.4)" strokeWidth="1.5" fill="rgba(10,10,14,0.08)" />
-            <line x1="130" y1="350" x2="190" y2="350" stroke="rgba(45,48,58,0.3)" strokeWidth="1" />
-            <line x1="135" y1="500" x2="185" y2="500" stroke="rgba(45,48,58,0.25)" strokeWidth="1" />
-            <line x1="132" y1="650" x2="188" y2="650" stroke="rgba(45,48,58,0.2)" strokeWidth="1" />
-            <path d="M145 400 Q160 380 175 400" stroke="rgba(45,48,58,0.25)" strokeWidth="1" fill="none" />
+            <path d="M180 900 L180 120 Q160 40 140 0" stroke="rgba(45,50,68,0.5)" strokeWidth="2" />
+            <path d="M160 900 L160 180 Q145 80 120 20" stroke="rgba(40,45,62,0.35)" strokeWidth="1.5" />
+            <path d="M190 900 L190 300 Q180 260 160 240 Q140 260 130 300 L130 900" stroke="rgba(35,40,58,0.4)" strokeWidth="1.5" fill="rgba(5,5,10,0.08)" />
+            <line x1="130" y1="350" x2="190" y2="350" stroke="rgba(35,40,58,0.3)" strokeWidth="1" />
+            <line x1="135" y1="500" x2="185" y2="500" stroke="rgba(35,40,58,0.25)" strokeWidth="1" />
+            <line x1="132" y1="650" x2="188" y2="650" stroke="rgba(35,40,58,0.2)" strokeWidth="1" />
+            <path d="M145 400 Q160 380 175 400" stroke="rgba(35,40,58,0.25)" strokeWidth="1" fill="none" />
           </svg>
         </div>
 
@@ -206,9 +206,9 @@ export default function TheDescent() {
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
           >
-            <path d="M130 900 L130 200 Q110 100 90 30" stroke="rgba(50,53,63,0.35)" strokeWidth="1.5" />
-            <path d="M110 900 L110 280 Q95 160 70 50" stroke="rgba(50,53,63,0.25)" strokeWidth="1" />
-            <path d="M70 900 L70 350 Q80 300 95 280 Q110 300 120 350 L120 900" stroke="rgba(40,43,53,0.3)" strokeWidth="1" fill="rgba(8,8,12,0.06)" />
+            <path d="M130 900 L130 200 Q110 100 90 30" stroke="rgba(40,45,62,0.35)" strokeWidth="1.5" />
+            <path d="M110 900 L110 280 Q95 160 70 50" stroke="rgba(40,45,62,0.25)" strokeWidth="1" />
+            <path d="M70 900 L70 350 Q80 300 95 280 Q110 300 120 350 L120 900" stroke="rgba(30,35,52,0.3)" strokeWidth="1" fill="rgba(4,4,8,0.06)" />
           </svg>
         </div>
 
@@ -225,13 +225,13 @@ export default function TheDescent() {
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
           >
-            <path d="M20 900 L20 120 Q40 40 60 0" stroke="rgba(55,58,68,0.5)" strokeWidth="2" />
-            <path d="M40 900 L40 180 Q55 80 80 20" stroke="rgba(55,58,68,0.35)" strokeWidth="1.5" />
-            <path d="M10 900 L10 300 Q20 260 40 240 Q60 260 70 300 L70 900" stroke="rgba(45,48,58,0.4)" strokeWidth="1.5" fill="rgba(10,10,14,0.08)" />
-            <line x1="10" y1="350" x2="70" y2="350" stroke="rgba(45,48,58,0.3)" strokeWidth="1" />
-            <line x1="15" y1="500" x2="65" y2="500" stroke="rgba(45,48,58,0.25)" strokeWidth="1" />
-            <line x1="12" y1="650" x2="68" y2="650" stroke="rgba(45,48,58,0.2)" strokeWidth="1" />
-            <path d="M25 400 Q40 380 55 400" stroke="rgba(45,48,58,0.25)" strokeWidth="1" fill="none" />
+            <path d="M20 900 L20 120 Q40 40 60 0" stroke="rgba(45,50,68,0.5)" strokeWidth="2" />
+            <path d="M40 900 L40 180 Q55 80 80 20" stroke="rgba(40,45,62,0.35)" strokeWidth="1.5" />
+            <path d="M10 900 L10 300 Q20 260 40 240 Q60 260 70 300 L70 900" stroke="rgba(35,40,58,0.4)" strokeWidth="1.5" fill="rgba(5,5,10,0.08)" />
+            <line x1="10" y1="350" x2="70" y2="350" stroke="rgba(35,40,58,0.3)" strokeWidth="1" />
+            <line x1="15" y1="500" x2="65" y2="500" stroke="rgba(35,40,58,0.25)" strokeWidth="1" />
+            <line x1="12" y1="650" x2="68" y2="650" stroke="rgba(35,40,58,0.2)" strokeWidth="1" />
+            <path d="M25 400 Q40 380 55 400" stroke="rgba(35,40,58,0.25)" strokeWidth="1" fill="none" />
           </svg>
         </div>
 
@@ -248,9 +248,9 @@ export default function TheDescent() {
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
           >
-            <path d="M10 900 L10 200 Q30 100 50 30" stroke="rgba(50,53,63,0.35)" strokeWidth="1.5" />
-            <path d="M30 900 L30 280 Q45 160 70 50" stroke="rgba(50,53,63,0.25)" strokeWidth="1" />
-            <path d="M70 900 L70 350 Q60 300 45 280 Q30 300 20 350 L20 900" stroke="rgba(40,43,53,0.3)" strokeWidth="1" fill="rgba(8,8,12,0.06)" />
+            <path d="M10 900 L10 200 Q30 100 50 30" stroke="rgba(40,45,62,0.35)" strokeWidth="1.5" />
+            <path d="M30 900 L30 280 Q45 160 70 50" stroke="rgba(40,45,62,0.25)" strokeWidth="1" />
+            <path d="M70 900 L70 350 Q60 300 45 280 Q30 300 20 350 L20 900" stroke="rgba(30,35,52,0.3)" strokeWidth="1" fill="rgba(4,4,8,0.06)" />
           </svg>
         </div>
 
@@ -269,8 +269,8 @@ export default function TheDescent() {
                 className="font-[family-name:var(--font-geist-mono)] text-center text-[clamp(11px,1.4vw,16px)] uppercase tracking-[0.35em]"
                 style={{
                   opacity: 0,
-                  color: "rgba(160, 170, 185, 0.75)",
-                  textShadow: "0 0 40px rgba(160, 170, 185, 0.12)",
+                  color: "rgba(140, 155, 175, 0.60)",
+                  textShadow: "0 0 40px rgba(140, 155, 175, 0.08)",
                   willChange: "clip-path, filter, transform, opacity",
                 }}
               >

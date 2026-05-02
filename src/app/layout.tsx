@@ -6,16 +6,10 @@ import ThemeProvider from "@/providers/ThemeProvider";
 import CustomCursor from "@/components/CustomCursor";
 import Navbar from "@/components/Navbar";
 import WebGLBackground from "@/components/WebGLBackground";
-import ShadowConsumeOverlay from "@/components/ShadowConsumeOverlay";
 import PageTransitionProvider from "@/providers/PageTransitionProvider";
+import AbyssFog from "@/components/AbyssFog";
+import VoidTendrils from "@/components/VoidTendrils";
 import { Toaster } from "@/components/ui/toaster";
-
-// ── Pre-hydration theme script ──
-const THEME_INIT_SCRIPT =
-  "(function(){try{var t=sessionStorage.getItem('volari-theme');" +
-  "if(t!=='day'&&t!=='void')t='void';" +
-  "document.documentElement.setAttribute('data-theme',t);}" +
-  "catch(e){document.documentElement.setAttribute('data-theme','void');}})();";
 
 // ── Typography ──
 const geistSans = Geist({
@@ -69,21 +63,19 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${playfair.variable} ${geistMono.variable} antialiased`}
       suppressHydrationWarning
+      data-theme="void"
     >
-      <head>
-        <script
-          // eslint-disable-next-line react/no-danger
-          dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }}
-        />
-      </head>
       <body className="min-h-screen text-v-chalk">
         <ThemeProvider>
           <SmoothScrollProvider>
             {/* WebGL fluid background — fixed -z-1 */}
             <WebGLBackground />
 
-            {/* Shadow-consume overlay — fixed z-[9998] */}
-            <ShadowConsumeOverlay />
+            {/* Abyss fog layers — atmospheric depth */}
+            <AbyssFog />
+
+            {/* Void tendrils — floating shadow particles */}
+            <VoidTendrils />
 
             {/* Navigation — fixed z-50 */}
             <Navbar />

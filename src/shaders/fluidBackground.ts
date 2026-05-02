@@ -439,17 +439,20 @@ export const fragmentShader = /* glsl */ `
     f+=burst;
 
     // ── Theme palette ──
-    vec3 v_l0=vec3(0.032, 0.033, 0.037);
-    vec3 v_l1=vec3(0.068, 0.070, 0.079);
-    vec3 v_l2=vec3(0.112, 0.117, 0.134);
-    vec3 v_l3=vec3(0.150, 0.159, 0.187);
-    vec3 v_l4=vec3(0.185, 0.197, 0.232);
+    // VOID: Cold abyss blues — absolute black base, deep blue-grey layers
+    // Like Hollow Knight's Abyss: no warmth, only depth and cold
+    vec3 v_l0=vec3(0.015, 0.015, 0.022);
+    vec3 v_l1=vec3(0.025, 0.028, 0.038);
+    vec3 v_l2=vec3(0.040, 0.045, 0.060);
+    vec3 v_l3=vec3(0.060, 0.068, 0.090);
+    vec3 v_l4=vec3(0.085, 0.095, 0.125);
 
-    vec3 d_l0=vec3(0.949, 0.925, 0.882);
-    vec3 d_l1=vec3(0.910, 0.870, 0.792);
-    vec3 d_l2=vec3(0.855, 0.790, 0.670);
-    vec3 d_l3=vec3(0.780, 0.675, 0.498);
-    vec3 d_l4=vec3(0.680, 0.545, 0.340);
+    // DAY: Pale stone greys — City of Tears / Pale Court warmth
+    vec3 d_l0=vec3(0.878, 0.894, 0.918);
+    vec3 d_l1=vec3(0.831, 0.855, 0.886);
+    vec3 d_l2=vec3(0.769, 0.792, 0.831);
+    vec3 d_l3=vec3(0.667, 0.690, 0.737);
+    vec3 d_l4=vec3(0.565, 0.588, 0.639);
 
     vec3 l0=mix(v_l0,d_l0,uFlip);
     vec3 l1=mix(v_l1,d_l1,uFlip);
@@ -480,8 +483,8 @@ export const fragmentShader = /* glsl */ `
     // ── Ripple tint ──
     float crestRip=max(vRipple,0.0);
     float troughRip=max(-vRipple,0.0);
-    vec3 v_moon=vec3(0.62,0.70,0.86);
-    vec3 d_moon=vec3(0.95,0.88,0.70);
+    vec3 v_moon=vec3(0.55,0.62,0.75);
+    vec3 d_moon=vec3(0.75,0.80,0.90);
     vec3 moonTint=mix(v_moon,d_moon,uFlip);
     col+=moonTint*crestRip*0.32;
     col+=l4*crestRip*0.10;
@@ -509,12 +512,11 @@ export const fragmentShader = /* glsl */ `
     // ═══════════════════════════════════════════════════════════
 
     // ── Light beam from above ──
-    // A physical shaft of light eaten by the void.
-    // Noise-distorted edges. Not soft — harsh and struggling.
+    // A physical shaft of pale cold light eaten by the void.
     {
       float beam = lightBeam(vUv, uTime, d);
-      // Beam color: cold silver-white. No warmth. No tint.
-      vec3 beamColor = vec3(0.55, 0.58, 0.64);
+      // Beam color: cold pale blue-grey. Like the Lighthouse in Hollow Knight.
+      vec3 beamColor = vec3(0.50, 0.55, 0.65);
       col += beamColor * beam;
     }
 
