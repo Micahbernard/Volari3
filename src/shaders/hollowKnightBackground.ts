@@ -3,10 +3,10 @@
 // Layer 1: Ruined Background with Movement
 //
 // Reference: Hollow Knight profile select screen
-// - Dark blue-gray atmospheric fog
-// - Gothic ruined architecture silhouettes
+// - Blue-gray atmospheric fog (NOT pure black)
+// - Gothic ruined architecture silhouettes at multiple depths
 // - Subtle parallax drift/sway
-// - Multiple depth layers creating volumetric depth
+// - Dense volumetric fog creating depth layers
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const vertexShader = /* glsl */ `
@@ -28,33 +28,36 @@ export const fragmentShader = /* glsl */ `
   varying vec2 vUv;
 
   // ─────────────────────────────────────────────────────────────
-  // COLOR PALETTE - Hollow Knight Abyss/Menu
+  // COLOR PALETTE - Matched to Hollow Knight reference images
+  // Blue-gray mist tones, NOT pure black
   // ─────────────────────────────────────────────────────────────
-  // Deep blacks and cold blue-grays
-  const vec3 COLOR_VOID = vec3(0.02, 0.02, 0.03);        // Near black base
-  const vec3 COLOR_DEEP = vec3(0.04, 0.045, 0.06);       // Deep fog
-  const vec3 COLOR_MID = vec3(0.08, 0.09, 0.12);         // Mid fog
-  const vec3 COLOR_LIGHT = vec3(0.14, 0.16, 0.22);       // Light fog highlights
-  const vec3 COLOR_MIST = vec3(0.20, 0.24, 0.32);        // Brightest mist
+  const vec3 COLOR_DEEPEST = vec3(0.06, 0.07, 0.10);      // Darkest areas #10121a
+  const vec3 COLOR_DARK = vec3(0.10, 0.11, 0.16);         // Dark fog #1a1c29
+  const vec3 COLOR_BASE = vec3(0.14, 0.16, 0.22);         // Base atmosphere #242938
+  const vec3 COLOR_MID = vec3(0.20, 0.23, 0.30);          // Mid fog #333a4d
+  const vec3 COLOR_LIGHT = vec3(0.28, 0.32, 0.42);        // Lighter mist #47526b
+  const vec3 COLOR_BRIGHT = vec3(0.38, 0.44, 0.55);       // Brightest fog wisps #61708c
+  const vec3 COLOR_SILHOUETTE = vec3(0.04, 0.05, 0.07);   // Ruin silhouettes #0a0c12
 
   // ─────────────────────────────────────────────────────────────
   // NOISE FUNCTIONS
   // ─────────────────────────────────────────────────────────────
   
-  // Simple hash for noise
   float hash(vec2 p) {
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
   }
 
-  float hash(float n) {
-    return fract(sin(n) * 43758.5453123);
+  float hash21(vec2 p) {
+    vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
   }
 
-  // 2D Value noise
+  // Smooth 2D noise
   float noise(vec2 p) {
     vec2 i = floor(p);
     vec2 f = fract(p);
-    f = f * f * (3.0 - 2.0 * f); // smoothstep
+    f = f * f * (3.0 - 2.0 * f);
     
     float a = hash(i);
     float b = hash(i + vec2(1.0, 0.0));
@@ -64,203 +67,318 @@ export const fragmentShader = /* glsl */ `
     return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
   }
 
-  // Fractal Brownian Motion
+  // Fractal Brownian Motion - organic cloud-like patterns
   float fbm(vec2 p, int octaves) {
     float value = 0.0;
     float amplitude = 0.5;
     float frequency = 1.0;
+    float maxValue = 0.0;
     
-    for(int i = 0; i < 6; i++) {
+    for(int i = 0; i < 8; i++) {
       if(i >= octaves) break;
       value += amplitude * noise(p * frequency);
+      maxValue += amplitude;
       frequency *= 2.0;
       amplitude *= 0.5;
     }
     
-    return value;
+    return value / maxValue;
+  }
+
+  // Warped FBM for more organic movement
+  float warpedFbm(vec2 p, float time, int octaves) {
+    vec2 q = vec2(
+      fbm(p + vec2(0.0, 0.0), octaves),
+      fbm(p + vec2(5.2, 1.3), octaves)
+    );
+    
+    vec2 r = vec2(
+      fbm(p + 4.0 * q + vec2(1.7, 9.2) + 0.15 * time, octaves),
+      fbm(p + 4.0 * q + vec2(8.3, 2.8) + 0.126 * time, octaves)
+    );
+    
+    return fbm(p + 4.0 * r, octaves);
   }
 
   // ─────────────────────────────────────────────────────────────
-  // ARCHITECTURAL SILHOUETTES
-  // Creates gothic/ruined shapes suggestive of ancient structures
+  // ARCHITECTURAL SHAPES - More detailed gothic structures
   // ─────────────────────────────────────────────────────────────
   
-  // Pillar/column shape
-  float pillar(vec2 uv, float x, float width, float height, float crumble) {
-    // Base pillar shape
-    float dist = abs(uv.x - x);
-    float pillarMask = smoothstep(width, width * 0.8, dist);
-    
-    // Height cutoff with ragged top edge (crumbled)
-    float topNoise = noise(vec2(uv.x * 20.0, 0.0)) * crumble;
-    float top = height + topNoise * 0.1;
-    pillarMask *= smoothstep(top + 0.02, top, uv.y);
-    
-    // Base always at bottom
-    pillarMask *= smoothstep(0.0, 0.05, uv.y);
-    
-    return pillarMask;
-  }
-
-  // Gothic arch shape
-  float arch(vec2 uv, float x, float width, float height) {
-    vec2 p = uv - vec2(x, 0.0);
-    
-    // Arch opening (pointed gothic arch)
-    float archWidth = width * 0.7;
-    float archDist = length(vec2(p.x, max(0.0, p.y - height * 0.6)));
-    float archCurve = smoothstep(archWidth, archWidth * 0.9, archDist);
-    
-    // Outer pillar bounds
-    float outerMask = smoothstep(width, width * 0.95, abs(p.x));
-    outerMask *= smoothstep(0.0, 0.02, uv.y);
-    outerMask *= smoothstep(height + 0.02, height, uv.y);
-    
-    return max(0.0, outerMask - archCurve * 0.5);
-  }
-
-  // Ruined wall segment
-  float ruinedWall(vec2 uv, float x, float width, float baseHeight) {
+  // Detailed pillar with capital and base
+  float pillar(vec2 uv, float x, float width, float height, float decay) {
     float dist = abs(uv.x - x);
     
-    // Jagged top edge using noise
-    float edgeNoise = fbm(vec2(uv.x * 15.0, uTime * 0.01), 3);
-    float height = baseHeight * (0.7 + edgeNoise * 0.3);
+    // Main shaft
+    float shaft = smoothstep(width, width * 0.85, dist);
     
-    float mask = smoothstep(width, width * 0.9, dist);
-    mask *= smoothstep(height + 0.01, height, uv.y);
-    mask *= smoothstep(0.0, 0.03, uv.y);
+    // Capital (wider top section)
+    float capitalY = height - 0.05;
+    float inCapital = smoothstep(capitalY - 0.02, capitalY, uv.y) * smoothstep(height, capitalY, uv.y);
+    float capitalWidth = width * 1.4;
+    float capital = smoothstep(capitalWidth, capitalWidth * 0.9, dist) * inCapital;
     
-    return mask;
+    // Base (wider bottom section)
+    float inBase = smoothstep(0.08, 0.03, uv.y);
+    float baseWidth = width * 1.3;
+    float base = smoothstep(baseWidth, baseWidth * 0.9, dist) * inBase;
+    
+    float pillarMask = max(shaft, max(capital, base));
+    
+    // Crumbled/jagged top edge
+    float topNoise = noise(vec2(uv.x * 40.0 + x * 100.0, 0.0)) * decay;
+    float adjustedHeight = height - topNoise * 0.12;
+    pillarMask *= smoothstep(adjustedHeight + 0.01, adjustedHeight - 0.01, uv.y);
+    
+    // Bottom cutoff
+    pillarMask *= smoothstep(0.0, 0.02, uv.y);
+    
+    // Add edge detail/erosion
+    float erosion = noise(vec2(uv.x * 60.0, uv.y * 30.0)) * decay * 0.3;
+    pillarMask *= 1.0 - erosion;
+    
+    return clamp(pillarMask, 0.0, 1.0);
+  }
+
+  // Gothic pointed arch
+  float gothicArch(vec2 uv, float x, float width, float height, float thickness) {
+    vec2 p = vec2(uv.x - x, uv.y);
+    
+    // Two circular arcs meeting at a point (gothic arch shape)
+    float archStartY = height * 0.45;
+    float radius = width * 1.2;
+    
+    // Left arc center
+    vec2 leftCenter = vec2(-width * 0.3, archStartY);
+    float leftDist = length(p - leftCenter);
+    
+    // Right arc center  
+    vec2 rightCenter = vec2(width * 0.3, archStartY);
+    float rightDist = length(p - rightCenter);
+    
+    // The arch opening is where BOTH distances are less than radius
+    float archOpening = 1.0 - smoothstep(radius - 0.02, radius, min(leftDist, rightDist));
+    archOpening *= step(archStartY * 0.5, p.y); // Only above certain height
+    
+    // Outer frame
+    float frame = smoothstep(width + thickness, width, abs(p.x));
+    frame *= smoothstep(0.0, 0.02, uv.y);
+    frame *= smoothstep(height + 0.01, height - 0.01, uv.y);
+    
+    // Subtract opening from frame
+    float arch = frame * (1.0 - archOpening * 0.85);
+    
+    return clamp(arch, 0.0, 1.0);
+  }
+
+  // Ruined wall with irregular top
+  float ruinedWall(vec2 uv, float x, float width, float baseHeight, float seed) {
+    float dist = abs(uv.x - x);
+    
+    // Irregular top edge using noise
+    float topVariation = noise(vec2(uv.x * 25.0 + seed * 50.0, seed)) * 0.25;
+    topVariation += noise(vec2(uv.x * 50.0 + seed * 100.0, seed * 2.0)) * 0.1;
+    float height = baseHeight * (0.6 + topVariation);
+    
+    // Width variation (crumbling sides)
+    float sideNoise = noise(vec2(seed * 30.0, uv.y * 15.0)) * 0.15;
+    float adjustedWidth = width * (1.0 - sideNoise);
+    
+    float mask = smoothstep(adjustedWidth, adjustedWidth * 0.9, dist);
+    mask *= smoothstep(height + 0.005, height - 0.005, uv.y);
+    mask *= smoothstep(0.0, 0.02, uv.y);
+    
+    // Random holes/gaps in the wall
+    float holes = noise(vec2(uv.x * 40.0 + seed * 20.0, uv.y * 25.0));
+    holes = smoothstep(0.7, 0.8, holes);
+    mask *= 1.0 - holes * 0.7;
+    
+    return clamp(mask, 0.0, 1.0);
+  }
+
+  // Window frame (empty rectangle)
+  float windowFrame(vec2 uv, float x, float y, float w, float h, float thickness) {
+    vec2 p = uv - vec2(x, y);
+    
+    // Outer rectangle
+    float outer = step(-w, p.x) * step(p.x, w) * step(-h, p.y) * step(p.y, h);
+    
+    // Inner rectangle (the opening)
+    float innerW = w - thickness;
+    float innerH = h - thickness;
+    float inner = step(-innerW, p.x) * step(p.x, innerW) * step(-innerH, p.y) * step(p.y, innerH);
+    
+    return outer - inner;
   }
 
   // ─────────────────────────────────────────────────────────────
-  // LAYER 1: RUINED BACKGROUND
-  // Far distance atmospheric layer with architectural hints
+  // LAYER COMPOSITION
   // ─────────────────────────────────────────────────────────────
   
   vec3 ruinedBackground(vec2 uv, float time) {
-    // Start with deep void color
-    vec3 color = COLOR_VOID;
+    // ══════════════════════════════════════════════════════════
+    // BASE ATMOSPHERE - Blue-gray gradient (not black!)
+    // ══════════════════════════════════════════════════════════
     
-    // ── Parallax drift ──
-    // Slow, gentle horizontal sway to create depth and life
-    float drift = sin(time * 0.08) * 0.02;
-    float drift2 = sin(time * 0.05 + 1.5) * 0.015;
+    // Vertical gradient - lighter in upper-middle, darker at edges
+    float vertGrad = smoothstep(0.0, 0.5, uv.y) * smoothstep(1.0, 0.4, uv.y);
+    vec3 baseColor = mix(COLOR_DARK, COLOR_BASE, vertGrad);
     
-    // ── LAYER: Far distant fog ──
-    // Very back layer - nearly uniform dark with subtle variation
+    // Add horizontal variation
+    float horizVar = sin(uv.x * 3.14159) * 0.5 + 0.5;
+    baseColor = mix(baseColor, COLOR_MID, horizVar * 0.15);
+    
+    vec3 color = baseColor;
+    
+    // ══════════════════════════════════════════════════════════
+    // PARALLAX MOVEMENT VALUES
+    // ══════════════════════════════════════════════════════════
+    float drift1 = sin(time * 0.05) * 0.015;  // Slowest - far layer
+    float drift2 = sin(time * 0.07 + 1.0) * 0.02;  // Medium
+    float drift3 = sin(time * 0.09 + 2.0) * 0.025; // Faster - near layer
+    
+    // ══════════════════════════════════════════════════════════
+    // FAR BACKGROUND FOG (Layer 0) - Deepest atmospheric haze
+    // ══════════════════════════════════════════════════════════
     {
-      vec2 fogUV = uv + vec2(drift * 0.3, 0.0);
-      float fog = fbm(fogUV * 2.0 + vec2(time * 0.01, 0.0), 4);
+      vec2 fogUV = uv + vec2(drift1 * 0.3, 0.0);
+      float fog = warpedFbm(fogUV * 1.5 + time * 0.008, time * 0.5, 4);
+      fog = smoothstep(0.25, 0.75, fog);
+      
+      // Stronger in center band
+      float band = smoothstep(0.1, 0.4, uv.y) * smoothstep(0.95, 0.6, uv.y);
+      fog *= band * 0.6 + 0.4;
+      
+      color = mix(color, COLOR_MID, fog * 0.3);
+    }
+    
+    // ══════════════════════════════════════════════════════════
+    // FAR RUINS SILHOUETTE (Layer 1) - Barely visible distant structures
+    // ══════════════════════════════════════════════════════════
+    {
+      vec2 ruinUV = uv + vec2(drift1, 0.0);
+      float ruins = 0.0;
+      float depth = 0.25; // How dark/visible (lower = more faded)
+      
+      // Distant pillars across the back
+      ruins += pillar(ruinUV, 0.05, 0.018, 0.72, 0.3) * depth;
+      ruins += pillar(ruinUV, 0.18, 0.022, 0.58, 0.5) * depth;
+      ruins += pillar(ruinUV, 0.35, 0.015, 0.65, 0.4) * depth;
+      
+      // Central arch structure
+      ruins += gothicArch(ruinUV, 0.5, 0.08, 0.6, 0.025) * depth * 0.8;
+      
+      // Right side structures
+      ruins += pillar(ruinUV, 0.65, 0.016, 0.62, 0.45) * depth;
+      ruins += pillar(ruinUV, 0.82, 0.02, 0.55, 0.5) * depth;
+      ruins += pillar(ruinUV, 0.95, 0.019, 0.68, 0.35) * depth;
+      
+      // Connecting wall fragments
+      ruins += ruinedWall(ruinUV, 0.26, 0.05, 0.42, 1.0) * depth * 0.6;
+      ruins += ruinedWall(ruinUV, 0.74, 0.06, 0.38, 2.0) * depth * 0.6;
+      
+      // Silhouettes slightly darker than background
+      color = mix(color, COLOR_SILHOUETTE, ruins * 0.5);
+    }
+    
+    // ══════════════════════════════════════════════════════════
+    // MID FOG LAYER (Layer 2) - Obscuring mist
+    // ══════════════════════════════════════════════════════════
+    {
+      vec2 fogUV = uv + vec2(drift2 * 0.6, sin(time * 0.04) * 0.008);
+      
+      // Multi-layer fog
+      float fog1 = fbm(fogUV * 3.0 + vec2(time * 0.015, 0.0), 5);
+      float fog2 = fbm(fogUV * 4.5 + vec2(-time * 0.01, time * 0.005), 4);
+      float fog = fog1 * 0.65 + fog2 * 0.35;
       fog = smoothstep(0.3, 0.7, fog);
       
-      // Vertical gradient - lighter toward center-top
-      float vertGrad = smoothstep(0.0, 0.7, uv.y) * smoothstep(1.0, 0.5, uv.y);
-      fog *= vertGrad * 0.5 + 0.5;
+      // Horizontal bands of thicker fog
+      float band1 = smoothstep(0.15, 0.35, uv.y) * smoothstep(0.55, 0.35, uv.y);
+      float band2 = smoothstep(0.45, 0.65, uv.y) * smoothstep(0.85, 0.65, uv.y);
+      fog *= (band1 + band2) * 0.5 + 0.3;
       
-      color = mix(color, COLOR_DEEP, fog * 0.4);
+      color = mix(color, COLOR_LIGHT, fog * 0.35);
     }
     
-    // ── LAYER: Distant ruins silhouette ──
-    // Very faint architectural shapes in the far background
+    // ══════════════════════════════════════════════════════════
+    // MID RUINS SILHOUETTE (Layer 3) - More prominent structures
+    // ══════════════════════════════════════════════════════════
     {
-      vec2 ruinUV = uv + vec2(drift * 0.5, 0.0);
-      
+      vec2 ruinUV = uv + vec2(drift2, 0.0);
       float ruins = 0.0;
+      float depth = 0.45; // More visible than far layer
       
-      // Far left tall pillar (barely visible)
-      ruins += pillar(ruinUV, 0.08, 0.025, 0.65, 0.4) * 0.3;
+      // Edge pillars (frame the view)
+      ruins += pillar(ruinUV, -0.03, 0.04, 0.82, 0.2) * depth;
+      ruins += pillar(ruinUV, 1.03, 0.038, 0.78, 0.25) * depth;
       
-      // Center-left arch structure
-      ruins += arch(ruinUV, 0.25, 0.06, 0.55) * 0.25;
+      // Secondary pillars
+      ruins += pillar(ruinUV, 0.12, 0.028, 0.55, 0.4) * depth * 0.7;
+      ruins += pillar(ruinUV, 0.88, 0.026, 0.52, 0.45) * depth * 0.7;
       
-      // Center pillars (subtle)
-      ruins += pillar(ruinUV, 0.42, 0.02, 0.48, 0.6) * 0.2;
-      ruins += pillar(ruinUV, 0.58, 0.018, 0.52, 0.5) * 0.2;
+      // Ruined walls on sides
+      ruins += ruinedWall(ruinUV, 0.08, 0.09, 0.38, 3.0) * depth * 0.5;
+      ruins += ruinedWall(ruinUV, 0.92, 0.085, 0.35, 4.0) * depth * 0.5;
       
-      // Right side ruins
-      ruins += ruinedWall(ruinUV, 0.78, 0.08, 0.45) * 0.25;
-      ruins += pillar(ruinUV, 0.92, 0.03, 0.58, 0.3) * 0.3;
+      // Window frames in walls
+      ruins += windowFrame(ruinUV, 0.1, 0.25, 0.02, 0.04, 0.008) * depth * 0.3;
+      ruins += windowFrame(ruinUV, 0.9, 0.22, 0.018, 0.035, 0.007) * depth * 0.3;
       
-      // Add noise breakup to silhouettes
-      float breakup = noise(ruinUV * 30.0 + time * 0.02);
-      ruins *= 0.8 + breakup * 0.2;
-      
-      // Silhouettes are DARKER than background
-      color = mix(color, COLOR_VOID * 0.5, ruins * 0.6);
+      color = mix(color, COLOR_SILHOUETTE, ruins * 0.65);
     }
     
-    // ── LAYER: Mid-distance fog bank ──
-    // Flowing fog that drifts and obscures
+    // ══════════════════════════════════════════════════════════
+    // NEAR FOG WISPS (Layer 4) - Foreground atmospheric wisps
+    // ══════════════════════════════════════════════════════════
     {
-      vec2 fogUV = uv + vec2(drift2, sin(time * 0.03) * 0.01);
+      vec2 fogUV = uv + vec2(drift3, sin(time * 0.06 + uv.x * 3.0) * 0.012);
       
-      // Multi-octave fog for organic movement
-      float fog1 = fbm(fogUV * 3.0 + vec2(time * 0.02, time * 0.01), 5);
-      float fog2 = fbm(fogUV * 5.0 + vec2(-time * 0.015, time * 0.008), 4);
+      float fog = fbm(fogUV * 5.0 + vec2(time * 0.025, time * 0.01), 4);
+      fog = smoothstep(0.4, 0.75, fog);
       
-      float fog = fog1 * 0.6 + fog2 * 0.4;
-      fog = smoothstep(0.35, 0.65, fog);
-      
-      // Concentrate fog in horizontal bands
-      float band1 = smoothstep(0.2, 0.4, uv.y) * smoothstep(0.6, 0.4, uv.y);
-      float band2 = smoothstep(0.5, 0.7, uv.y) * smoothstep(0.9, 0.7, uv.y);
-      fog *= (band1 * 0.7 + band2 * 0.5 + 0.2);
-      
-      color = mix(color, COLOR_MID, fog * 0.35);
-    }
-    
-    // ── LAYER: Closer ruins (mid-ground silhouettes) ──
-    {
-      vec2 ruinUV = uv + vec2(drift * 0.8, 0.0);
-      
-      float ruins = 0.0;
-      
-      // Larger, more prominent structures on edges
-      ruins += pillar(ruinUV, -0.02, 0.05, 0.75, 0.2) * 0.5;
-      ruins += pillar(ruinUV, 1.02, 0.045, 0.70, 0.25) * 0.5;
-      
-      // Crumbled wall sections
-      ruins += ruinedWall(ruinUV, 0.15, 0.12, 0.35) * 0.35;
-      ruins += ruinedWall(ruinUV, 0.85, 0.10, 0.32) * 0.35;
-      
-      // Break up with noise
-      float breakup = noise(ruinUV * 25.0 + time * 0.03);
-      ruins *= 0.85 + breakup * 0.15;
-      
-      color = mix(color, COLOR_VOID * 0.3, ruins * 0.7);
-    }
-    
-    // ── LAYER: Near fog wisps ──
-    // Closer, more defined fog drifting across
-    {
-      vec2 fogUV = uv + vec2(drift * 1.2, sin(time * 0.07 + uv.x * 2.0) * 0.015);
-      
-      float fog = fbm(fogUV * 6.0 + vec2(time * 0.03, 0.0), 4);
-      fog = smoothstep(0.45, 0.75, fog);
-      
-      // Wisps are thinner, more horizontal
-      float wispMask = smoothstep(0.3, 0.5, uv.y) * smoothstep(0.8, 0.5, uv.y);
+      // Wisps concentrated in lower-mid and upper areas
+      float wispMask = smoothstep(0.1, 0.3, uv.y) * smoothstep(0.5, 0.3, uv.y);
+      wispMask += smoothstep(0.6, 0.75, uv.y) * smoothstep(0.95, 0.8, uv.y) * 0.6;
       fog *= wispMask;
       
-      color = mix(color, COLOR_LIGHT, fog * 0.25);
+      color = mix(color, COLOR_BRIGHT, fog * 0.2);
     }
     
-    // ── Vignette ──
-    // Darken edges to focus attention center
+    // ══════════════════════════════════════════════════════════
+    // FOREGROUND RUINS (Layer 5) - Closest, darkest silhouettes  
+    // ══════════════════════════════════════════════════════════
     {
-      vec2 vigUV = uv - 0.5;
-      float vig = 1.0 - dot(vigUV, vigUV) * 1.2;
-      vig = smoothstep(0.0, 0.7, vig);
-      color *= vig * 0.5 + 0.5;
+      vec2 ruinUV = uv + vec2(drift3, 0.0);
+      float ruins = 0.0;
+      float depth = 0.7; // Very prominent
+      
+      // Large edge structures (partially off-screen)
+      ruins += pillar(ruinUV, -0.06, 0.065, 0.88, 0.15) * depth;
+      ruins += pillar(ruinUV, 1.06, 0.06, 0.85, 0.18) * depth;
+      
+      // Crumbling wall bases
+      ruins += ruinedWall(ruinUV, 0.02, 0.12, 0.28, 5.0) * depth * 0.6;
+      ruins += ruinedWall(ruinUV, 0.98, 0.11, 0.25, 6.0) * depth * 0.6;
+      
+      color = mix(color, COLOR_DEEPEST, ruins * 0.85);
     }
     
-    // ── Subtle vertical gradient ──
-    // Slightly lighter in center, darker at top and bottom edges
+    // ══════════════════════════════════════════════════════════
+    // ATMOSPHERIC GRAIN - Subtle texture
+    // ══════════════════════════════════════════════════════════
     {
-      float grad = smoothstep(0.0, 0.4, uv.y) * smoothstep(1.0, 0.6, uv.y);
-      color = mix(color * 0.85, color, grad);
+      float grain = hash21(uv * 500.0 + time * 0.1) * 0.03;
+      color += grain - 0.015;
+    }
+    
+    // ══════════════════════════════════════════════════════════
+    // VIGNETTE - Subtle darkening at edges
+    // ══════════════════════════════════════════════════════════
+    {
+      vec2 vigUV = (uv - 0.5) * 2.0;
+      float vig = 1.0 - dot(vigUV, vigUV) * 0.25;
+      vig = smoothstep(0.0, 1.0, vig);
+      color *= vig * 0.3 + 0.7;
     }
     
     return color;
@@ -272,12 +390,7 @@ export const fragmentShader = /* glsl */ `
   
   void main() {
     vec2 uv = vUv;
-    float aspect = uResolution.x / uResolution.y;
     
-    // Correct for aspect ratio in certain calculations
-    vec2 uvCorrected = vec2(uv.x * aspect, uv.y);
-    
-    // Get ruined background
     vec3 color = ruinedBackground(uv, uTime);
     
     gl_FragColor = vec4(color, 1.0);
